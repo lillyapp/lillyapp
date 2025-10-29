@@ -390,33 +390,6 @@
       #adminPanel .grid {
         grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
       }
-      
-      #userGrid {
-        overflow: hidden;
-        white-space: nowrap;
-        position: relative;
-        width: 100%;
-        border-top: 1px solid #ddd;
-        border-bottom: 1px solid #ddd;
-        padding: 1rem 0;
-      }
-
-      .user-tag {
-        display: inline-block;
-        background-color: #d9dadb;
-        border-radius: 8px;
-        padding: 0.4rem 0.8rem;
-        font-weight: 500;
-        font-size: 0.95rem;
-        color: #000;
-        margin-right: 0.6rem;
-      }
-
-      .user-tags-wrapper {
-        display: flex;
-        flex-wrap: wrap;
-        animation: none;
-      }
 
   </style>
 </head>
@@ -640,12 +613,15 @@
         }
 
         userGrid.innerHTML = '';
-        userGrid.innerHTML = '';
         data.forEach(user => {
-          const tag = document.createElement('span');
-          tag.className = 'user-tag';
-          tag.textContent = `${user.UserName}`;
-          userGrid.appendChild(tag);
+          const card = document.createElement('div');
+          card.className = 'card';
+          card.innerHTML = `
+            <h3>${user.UserName}</h3>
+            <p>Rolle: ${user.role || 'unbekannt'}</p>
+            <p>ID: ${user.id}</p>
+          `;
+          userGrid.appendChild(card);
         });
       }
         
