@@ -2,8 +2,149 @@
 <html lang="de">
 <head>
   <meta charset="utf-8" />
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+  <meta http-equiv="Pragma" content="no-cache" />
+  <meta http-equiv="Expires" content="0" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <script src="https://unpkg.com/feather-icons"></script>
+  <!-- Supabase SDK zuerst laden -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script>
+      
+      window.addEventListener("load", () => {
+        const url = new URL(window.location.href);
+        if (!url.searchParams.has("v")) {
+          url.searchParams.set("v", Date.now());
+          window.location.replace(url.toString());
+        }
+      });
+    // Supabase initialisieren
+    const supabase = window.supabase.createClient(
+      "https://uewrybgyaanhjoyqpmky.supabase.co",
+      "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVld3J5Ymd5YWFuaGpveXFwbWt5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjE3NjA2ODYsImV4cCI6MjA3NzMzNjY4Nn0.gTv68th-3S2hErX_Dp8RwjU3oZtQXLZFToLGUM5inT8"
+    );
+    
+    document.addEventListener('DOMContentLoaded', async () => {
+      const section = document.querySelector('main section.grid');
+      const upcomingSection = document.getElementById('upcoming');
+      const pendingSection = section;
+      section.innerHTML = '<p style="text-align:center;">Lade Daten...</p>';
+
+      try {
+        const { data, error } = await supabase
+          .from('Database')
+          .select('id, datum, typ, bereich, beschreibung, status, UserName, cardID, role')
+          .eq('id', '1234');
+
+        console.log("Supabase Daten:", data);
+        if (Array.isArray(data)) {
+          data.forEach((d, i) => console.log(`Datensatz ${i}:`, d));
+          console.log("Spalten:", Object.keys(data[0] || {}));
+        } else {
+          console.warn("Keine Daten oder falsches Format:", data);
+        }
+
+        if (error) {
+          section.innerHTML = `<p style="color:red;">Fehler beim Laden: ${error.message}</p>`;
+          console.error("Supabase Fehler:", error);
+          return;
+        }
+
+        if (!data || data.length === 0) {
+          section.innerHTML = '<p style="text-align:center;">Keine Einträge gefunden.</p>';
+          return;
+        }
+
+        // Willkommensnachricht aktualisieren
+        if (data[0].UserName) {
+          const welcomeTitle = document.querySelector('.welcome h1');
+          welcomeTitle.textContent = `Willkommen zurück! ${data[0].UserName}`;
+        }
+        
+        // Zweite Abfrage für Rollendefinition (z. B. 1234_role)
+        const { data: roleData, error: roleError } = await supabase
+          .from('Database')
+          .select('role')
+          .eq('id', '1234_role')
+          .single();
+
+        if (roleError) {
+          console.warn("Keine Rollendefinition gefunden:", roleError.message);
+        }
+
+        // Wenn Rolle 'admin' -> Stift anzeigen
+        if (roleData && roleData.role === 'admin') {
+          const header = document.querySelector('header');
+          const editIcon = document.createElement('div');
+          editIcon.className = 'edit';
+          editIcon.title = 'Admin-Modus';
+          editIcon.innerHTML = '<i data-feather=\"edit-3\"></i>';
+          editIcon.style.cursor = 'pointer';
+          editIcon.onclick = toggleAdminView;
+          header.appendChild(editIcon);
+          feather.replace();
+        }
+
+        section.innerHTML = '';
+        data.forEach(item => {
+          const card = document.createElement('article');
+          card.className = 'card';
+          card.dataset.cardId = item.cardID;
+          card.onclick = () => toggleCard(card);
+
+          const badge = document.createElement('div');
+          badge.className = 'badge-circle jp';
+          badge.textContent = (item.bereich?.substring(0, 2) || 'NA').toUpperCase();
+          card.appendChild(badge);
+
+          const h3 = document.createElement('h3');
+          h3.textContent = item.datum || '';
+          card.appendChild(h3);
+
+          const pInfo = document.createElement('p');
+          pInfo.innerHTML = `<strong>${item.typ || ''}</strong> ${item.bereich || ''}`;
+          card.appendChild(pInfo);
+
+          const contentDiv = document.createElement('div');
+          contentDiv.className = 'card-content';
+          const beschrP = document.createElement('p');
+          beschrP.innerHTML = '<br>' + (item.beschreibung || '');
+          contentDiv.appendChild(beschrP);
+
+          const btnBar = document.createElement('div');
+          btnBar.className = 'card-buttons';
+          const decline = document.createElement('button');
+          decline.className = 'decline';
+          decline.title = 'Ablehnen';
+          decline.innerHTML = '<i data-feather="x"></i>';
+          const accept = document.createElement('button');
+          accept.className = 'accept';
+          accept.title = 'Annehmen';
+          accept.innerHTML = '<i data-feather="check"></i>';
+          btnBar.appendChild(decline);
+          btnBar.appendChild(accept);
+          contentDiv.appendChild(btnBar);
+
+          card.appendChild(contentDiv);
+          // Statusprüfung und Verteilung auf die richtigen Bereiche
+          const status = (item.status || '').toLowerCase();
+          if (status === 'pending') {
+            pendingSection.appendChild(card);
+          } else if (status === 'approved') {
+            upcomingSection.appendChild(card);
+          } else {
+            pendingSection.appendChild(card); // Fallback, falls kein Status gesetzt ist
+          }
+        });
+
+        feather.replace();
+        if (typeof updateVisibility === 'function') setTimeout(() => updateVisibility(), 150);
+      } catch (err) {
+        console.error("Allgemeiner Fehler:", err);
+        section.innerHTML = '<p style="color:red;">Fehler beim Abrufen der Daten.</p>';
+      }
+    });
+  </script>
   <title>Lilly • Web App</title>
   <style>
     :root {
@@ -238,7 +379,44 @@
         opacity: 1;
       }
       
+      .edit {
+        font-size: 1.6rem;
+        margin-left: 12px;
+        transition: transform 0.2s ease;
+      }
+      .edit:hover {
+        transform: scale(1.2);
+      }
+      #adminPanel .grid {
+        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      }
       
+      #userGrid {
+        overflow: hidden;
+        white-space: nowrap;
+        position: relative;
+        width: 100%;
+        border-top: 1px solid #ddd;
+        border-bottom: 1px solid #ddd;
+        padding: 1rem 0;
+      }
+
+      .user-tag {
+        display: inline-block;
+        background-color: #d9dadb;
+        border-radius: 8px;
+        padding: 0.4rem 0.8rem;
+        font-weight: 500;
+        font-size: 0.95rem;
+        color: #000;
+        margin-right: 0.6rem;
+      }
+
+      .user-tags-wrapper {
+        display: flex;
+        flex-wrap: wrap;
+        animation: none;
+      }
 
   </style>
 </head>
@@ -249,62 +427,16 @@
       <i data-feather="settings"></i>
     </div>
   </header>
-
+  <div id="adminPanel">
+    <div id="userGrid"></div>
+  </div>
   <div class="welcome">
-    <h1>Willkommen zurück! Julian</h1>
+    <h1>Willkommen zurück!</h1>
   </div>
     <h2>Ausstehend</h2>
     <div id="noPendingMsg" style="text-align:center; opacity:0; transition:opacity 0.3s ease;">Keine ausstehenden Dienste</div>
 <main>
       <section class="grid">
-          <article class="card" onclick="toggleCard(this)">
-            <div class="badge-circle jp">JP</div>
-            <h3>29.09 (Tagdienst)</h3>
-            <p><strong>NEURO</strong> Anatomie & Physiologie</p>
-            <div class="card-content">
-                <p><br>Einführung in das Thema „Atemwegssicherung“ mit Fokus auf die praktische Anwendung von Guedel- und Wendl-Tuben. Vorbereitung auf Simulationstraining.</p>
-            <div class="card-buttons">
-                <button class="decline" title="Ablehnen"><i data-feather="x"></i></button>
-                <button class="accept" title="Annehmen"><i data-feather="check"></i></button>
-            </div>
-          </article>
-
-          <article class="card" onclick="toggleCard(this)">
-            <div class="badge-circle pa">LP</div>
-            <h3>29.09 (Nachtdienst)</h3>
-            <p><strong>TRAUMA</strong> Allgemeine Algorithmen</p>
-            <div class="card-content">
-                <p><br>Besprechung der aktuellen Leitlinie zum akuten Koronarsyndrom. Ziel: sichere Differenzierung und Übergabe nach standardisiertem Schema.
-</p>
-            <div class="card-buttons">
-                <button class="decline" title="Ablehnen"><i data-feather="x"></i></button>
-                <button class="accept" title="Annehmen"><i data-feather="check"></i></button>
-            </div>
-          </article>
-
-        <article class="card"onclick="toggleCard(this)">
-            <div class="badge-circle sm">SM</div>
-          <h3>29.09 (24 Std. Dienst)</h3>
-          <p><strong>SOP</strong> Einstieg in EVM / SAA</p>
-          <div class="card-content">
-              <p><br>Praxisübung zur Immobilisation der Wirbelsäule mit Schaufeltrage und Spineboard. Teamarbeit und Kommunikation im Fokus.</p>
-          <div class="card-buttons">
-              <button class="decline" title="Ablehnen"><i data-feather="x"></i></button>
-              <button class="accept" title="Annehmen"><i data-feather="check"></i></button>
-          </div>
-        </article>
-
-        <article class="card"onclick="toggleCard(this)">
-            <div class="badge-circle vs">VS</div>
-          <h3>29.09 (Tagdienst)</h3>
-          <p><strong>ATMUNG</strong> COPD Pathophysiologie</p>
-          <div class="card-content">
-              <p><br>Fallanalyse aus dem letzten Nachtdienst: internistische Notfälle bei älteren Patienten. Diskussion über Differentialdiagnosen und Medikamenteninteraktionen.<</p>
-          <div class="card-buttons">
-              <button class="decline" title="Ablehnen"><i data-feather="x"></i></button>
-              <button class="accept" title="Annehmen"><i data-feather="check"></i></button>
-          </div>
-        </article>
       </section>
       </main>
     
@@ -372,7 +504,7 @@
       }
 
       // Klicks abfangen
-      document.addEventListener('click', function(e) {
+      document.addEventListener('click', async function(e) {
         const btn = e.target.closest('button');
         if (!btn) return;
         const card = btn.closest('.card');
@@ -386,6 +518,14 @@
           // "Annehmen"-Button entfernen
           const acceptBtn = card.querySelector('.accept');
           if (acceptBtn) acceptBtn.remove();
+
+          // Supabase-Update für "approved"
+          console.log("Statusänderung für Card-ID:", card.dataset.cardId);
+          const updateResponse = await supabase
+            .from('Database')
+            .update({ status: 'approved' })
+            .eq('cardID', card.dataset.cardId);
+          console.log("Status aktualisiert auf 'approved':", updateResponse);
 
           // "Ablehnen" → Refresh-Symbol
           const declineBtn = card.querySelector('.decline');
@@ -446,6 +586,14 @@
             card.style.opacity = '0.6';
           }
 
+          // Supabase-Update für "pending"
+          console.log("Statusänderung für Card-ID:", card.dataset.cardId);
+          const updateResponse = await supabase
+            .from('Database')
+            .update({ status: 'pending' })
+            .eq('cardID', card.dataset.cardId);
+          console.log("Status aktualisiert auf 'pending':", updateResponse);
+
           updateVisibility();
         }
 
@@ -453,12 +601,64 @@
       });
 
       feather.replace();
-      updateVisibility(); // Initial prüfen
+      
+      async function toggleAdminView() {
+        const mainContent = document.querySelector('main');
+        const welcome = document.querySelector('.welcome');
+        const headers = document.querySelectorAll('h2');
+        const adminPanel = document.getElementById('adminPanel');
+
+        const isVisible = adminPanel.style.display === 'block';
+        if (isVisible) {
+          // Admin-Ansicht schließen
+          adminPanel.style.display = 'none';
+          mainContent.style.display = 'block';
+          headers.forEach(h => h.style.display = 'block');
+          welcome.style.display = 'block';
+          return;
+        }
+
+        // Normale Ansicht ausblenden
+        mainContent.style.display = 'none';
+        headers.forEach(h => h.style.display = 'none');
+        welcome.style.display = 'none';
+
+        // Admin-Panel zeigen
+        adminPanel.style.display = 'block';
+        const userGrid = document.getElementById('userGrid');
+        userGrid.innerHTML = '<p>Lade Benutzer...</p>';
+
+        // Benutzer abrufen
+        const { data, error } = await supabase
+          .from('Database')
+          .select('id, UserName, role')
+          .order('UserName');
+
+        if (error) {
+          userGrid.innerHTML = `<p style="color:red;">Fehler beim Laden der Benutzer: ${error.message}</p>`;
+          return;
+        }
+
+        userGrid.innerHTML = '';
+        userGrid.innerHTML = '';
+        data.forEach(user => {
+          const tag = document.createElement('span');
+          tag.className = 'user-tag';
+          tag.textContent = `${user.UserName}`;
+          userGrid.appendChild(tag);
+        });
+      }
+        
     </script>
     
     <script>
-      feather.replace();
+        if (!window.featherInitialized) {
+          feather.replace();
+          window.featherInitialized = true;
+        }
     </script>
+    
+    
     
 </body>
 </html>
