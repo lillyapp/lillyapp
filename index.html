@@ -1,1 +1,464 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <script src="https://unpkg.com/feather-icons"></script>
+  <title>Lilly • Web App</title>
+  <style>
+    :root {
+      --bg: white;
+      --text: black;
+      --muted: #555;
+      --accent: #3a6ff8;
+      --radius: 14px;
+      --shadow: 0 6px 18px rgba(0,0,0,0.08);
+      --container: 1100px;
+    }
 
+    html, body {
+      height: 100%;
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+    }
+
+    /* Header-Bereich mit Emoji und Zahnrad */
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 16px 24px;
+      font-size: 1.6rem;
+    }
+
+    .emoji {
+      font-size: 2rem;
+      cursor: default;
+      user-select: none;
+      margin-top: 5px;
+    }
+
+    .settings {
+      font-size: 1.6rem;
+      cursor: pointer;
+      user-select: none;
+      transition: transform 0.2s ease;
+      margin-top: 5px;
+    }
+    .settings:hover {
+      transform: rotate(30deg);
+    }
+
+    /* Willkommensnachricht */
+    .welcome {
+      text-align: center;
+      margin-top: 20px;
+    }
+
+    .welcome h1 {
+      font-size: clamp(2.6rem, 3vw, 2rem);
+      margin: 0;
+      font-weight: 600;
+      margin: 10px;
+      margin-bottom: 100px;
+      color: black;
+    }
+
+    .welcome p {
+      color: var(--muted);
+      margin: 6px 0 30px 0;
+      font-size: 1rem;
+    }
+      
+      h2 {
+        width: min(100%, var(--container));
+        margin: 40px auto 10px auto; /* richtet sich an der Grid-Breite aus */
+        padding-left: 24px; /* optische Einheit mit main-Padding */
+        font-size: clamp(1.5rem, 3vw, 2rem);
+        font-weight: 600;
+        color: black;
+        text-align: left;
+      }
+
+    /* Kartenübersicht */
+    main {
+      flex: 1;
+      display: block;          /* kein zentriertes Flex mehr */
+      padding: 0 24px 40px;    /* bündig mit h2 */
+    }
+
+    .grid {
+      width: min(100%, var(--container));
+      margin: 0 auto;           /* mittig auf der Seite */
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 20px;
+    }
+
+      /* Erweiterbare Kartenfunktion */
+      .card {
+        position: relative;
+        background: white;
+        border: 2px solid #000;
+        padding: 18px;
+        border-radius: 12px;
+        overflow: hidden;
+        cursor: pointer;
+        transition: all 0.3s ease;
+      }
+
+      .card.expanded {
+        background: white;
+      }
+
+      /* Versteckter Bereich */
+      .card-content {
+        max-height: 0;
+        overflow: hidden;
+        transition: max-height 0.4s ease;
+      }
+
+      /* Sichtbar, wenn Karte aktiv ist */
+      .card.expanded .card-content {
+        max-height: 300px; /* oder auto, aber das animiert unschön */
+      }
+
+      /* Optional: sanfte Innenabstände */
+      .card-content p {
+        margin-top: 10px;
+        font-size: 0.9rem;
+        color: black;
+      }
+
+      /* Kürzel-Kreise oben rechts */
+      .badge-circle {
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.9rem;
+        font-weight: bold;
+        color: #333;
+        border: 2px solid rgba(0, 0, 0, 0.15);
+      }
+
+      /* Beispiel-Farben: pastellig, hell mit dunklerer Randidee */
+      .badge-circle.jp {
+        background: #dbeafe;        /* hellblau */
+        border-color: #93c5fd;      /* etwas dunkler */
+      }
+
+      .badge-circle.pa {
+        background: #fef9c3;        /* hellgelb */
+        border-color: #fde047;      /* kräftiger gelbton */
+      }
+      
+      .badge-circle.sm {
+        background: #fce7f3;        /* hellgelb */
+        border-color: #f9a8d4;      /* kräftiger gelbton */
+      }
+      
+      .badge-circle.vs {
+        background: #dcfce7;        /* hellgelb */
+        border-color: #86efac;      /* kräftiger gelbton */
+      }
+
+    .card h3 {
+      margin: 0 0 6px 0;
+      font-size: 1.1rem;
+    }
+
+    .card p {
+      margin: 0;
+      font-size: 0.95rem;
+    }
+      
+      /* Button-Leiste unterhalb der ausgeklappten Inhalte */
+      .card-buttons {
+        display: none;
+        margin-top: 16px;
+        text-align: right;
+        gap: 10px;
+      }
+
+      /* sichtbar, wenn Karte geöffnet */
+      .card.expanded .card-buttons {
+        display: flex;
+        justify-content: flex-end;
+      }
+
+      /* allgemeines Button-Design */
+      .card-buttons button {
+        border: none;
+        border-radius: 8px;
+        font-size: 0.1rem;
+        font-weight: 600;
+        cursor: pointer;
+        background: white;
+        transition: all 0.2s ease;
+      }
+
+      /* grün: annehmen */
+      .card-buttons .accept {
+        color: #15803d;
+      }
+
+      .card-buttons .accept:hover {
+        background: #16a34a;
+        color: white;
+      }
+
+      /* rot: ablehnen */
+      .card-buttons .decline {
+        color: #b91c1c;
+      }
+
+      .card-buttons .decline:hover {
+        background: #dc2626;
+        color: white;
+      }
+      
+      #futureTitle {
+        margin-top: 40px;
+        text-align: left;
+        font-weight: 600;
+      }
+      #futureTitle.visible {
+        display: block;
+        opacity: 1;
+      }
+      
+      
+
+  </style>
+</head>
+<body>
+  <header>
+    <div class="emoji" data-feather="user"></div>
+    <div class="settings" title="Einstellungen" onclick="alert('Einstellungen öffnen...')">
+      <i data-feather="settings"></i>
+    </div>
+  </header>
+
+  <div class="welcome">
+    <h1>Willkommen zurück! Julian</h1>
+  </div>
+    <h2>Ausstehend</h2>
+    <div id="noPendingMsg" style="text-align:center; opacity:0; transition:opacity 0.3s ease;">Keine ausstehenden Dienste</div>
+<main>
+      <section class="grid">
+          <article class="card" onclick="toggleCard(this)">
+            <div class="badge-circle jp">JP</div>
+            <h3>29.09 (Tagdienst)</h3>
+            <p><strong>NEURO</strong> Anatomie & Physiologie</p>
+            <div class="card-content">
+                <p><br>Einführung in das Thema „Atemwegssicherung“ mit Fokus auf die praktische Anwendung von Guedel- und Wendl-Tuben. Vorbereitung auf Simulationstraining.</p>
+            <div class="card-buttons">
+                <button class="decline" title="Ablehnen"><i data-feather="x"></i></button>
+                <button class="accept" title="Annehmen"><i data-feather="check"></i></button>
+            </div>
+          </article>
+
+          <article class="card" onclick="toggleCard(this)">
+            <div class="badge-circle pa">LP</div>
+            <h3>29.09 (Nachtdienst)</h3>
+            <p><strong>TRAUMA</strong> Allgemeine Algorithmen</p>
+            <div class="card-content">
+                <p><br>Besprechung der aktuellen Leitlinie zum akuten Koronarsyndrom. Ziel: sichere Differenzierung und Übergabe nach standardisiertem Schema.
+</p>
+            <div class="card-buttons">
+                <button class="decline" title="Ablehnen"><i data-feather="x"></i></button>
+                <button class="accept" title="Annehmen"><i data-feather="check"></i></button>
+            </div>
+          </article>
+
+        <article class="card"onclick="toggleCard(this)">
+            <div class="badge-circle sm">SM</div>
+          <h3>29.09 (24 Std. Dienst)</h3>
+          <p><strong>SOP</strong> Einstieg in EVM / SAA</p>
+          <div class="card-content">
+              <p><br>Praxisübung zur Immobilisation der Wirbelsäule mit Schaufeltrage und Spineboard. Teamarbeit und Kommunikation im Fokus.</p>
+          <div class="card-buttons">
+              <button class="decline" title="Ablehnen"><i data-feather="x"></i></button>
+              <button class="accept" title="Annehmen"><i data-feather="check"></i></button>
+          </div>
+        </article>
+
+        <article class="card"onclick="toggleCard(this)">
+            <div class="badge-circle vs">VS</div>
+          <h3>29.09 (Tagdienst)</h3>
+          <p><strong>ATMUNG</strong> COPD Pathophysiologie</p>
+          <div class="card-content">
+              <p><br>Fallanalyse aus dem letzten Nachtdienst: internistische Notfälle bei älteren Patienten. Diskussion über Differentialdiagnosen und Medikamenteninteraktionen.<</p>
+          <div class="card-buttons">
+              <button class="decline" title="Ablehnen"><i data-feather="x"></i></button>
+              <button class="accept" title="Annehmen"><i data-feather="check"></i></button>
+          </div>
+        </article>
+      </section>
+      </main>
+    
+    <h2 id="futureTitle" style="opacity:0; display:none; transition:opacity 0.4s ease;">In Zukunft</h2>
+    <br>
+    <main>
+    <section class="grid" id="upcoming"></section>
+    </main>
+    <script>
+      function toggleCard(card) {
+        card.classList.toggle('expanded');
+      }
+
+      const upcomingSection = document.getElementById('upcoming');
+      const pendingSection = document.querySelector('main section.grid');
+      const futureTitle = document.getElementById('futureTitle');
+      const pendingTitle = document.querySelector('h2'); // "Ausstehend"
+
+      // Sichtbarkeit mit echtem Layout-Verschieben
+      function updateVisibility() {
+        const hasPending = pendingSection.children.length > 0;
+        const hasUpcoming = upcomingSection.children.length > 0;
+
+        // --- Ausstehend ---
+        // --- Ausstehend ---
+        const noPendingMsg = document.getElementById('noPendingMsg');
+
+        if (hasPending) {
+          pendingTitle.style.display = 'block';
+          pendingSection.style.display = 'grid';
+          requestAnimationFrame(() => {
+            pendingTitle.style.opacity = '1';
+            pendingSection.style.opacity = '1';
+          });
+          noPendingMsg.style.opacity = '0';
+          noPendingMsg.style.pointerEvents = 'none';
+        } else {
+          pendingTitle.style.display = 'block';
+          pendingSection.style.display = 'none';
+          pendingTitle.style.opacity = '1';
+          noPendingMsg.style.opacity = '1';
+          noPendingMsg.style.pointerEvents = 'auto';
+        }
+
+        // --- In Zukunft ---
+        if (hasUpcoming) {
+          futureTitle.style.display = 'block';
+          upcomingSection.style.display = 'grid';
+          requestAnimationFrame(() => {
+            futureTitle.style.opacity = '1';
+            upcomingSection.style.opacity = '1';
+            upcomingSection.style.position = 'relative';
+            upcomingSection.style.zIndex = '2';
+          });
+        } else {
+          futureTitle.style.opacity = '0';
+          upcomingSection.style.opacity = '0';
+          setTimeout(() => {
+            futureTitle.style.display = 'none';
+            upcomingSection.style.display = 'none';
+            upcomingSection.style.position = 'absolute';
+            upcomingSection.style.zIndex = '0';
+          }, 400);
+        }
+      }
+
+      // Klicks abfangen
+      document.addEventListener('click', function(e) {
+        const btn = e.target.closest('button');
+        if (!btn) return;
+        const card = btn.closest('.card');
+
+        // --- ANNEHMEN ---
+        if (btn.classList.contains('accept')) {
+          card.classList.remove('expanded');
+          card.style.opacity = '1';
+          card.style.pointerEvents = 'auto';
+
+          // "Annehmen"-Button entfernen
+          const acceptBtn = card.querySelector('.accept');
+          if (acceptBtn) acceptBtn.remove();
+
+          // "Ablehnen" → Refresh-Symbol
+          const declineBtn = card.querySelector('.decline');
+          if (declineBtn) {
+            declineBtn.innerHTML = '<i data-feather="refresh-ccw"></i>';
+            declineBtn.title = 'Zurück nach oben';
+            feather.replace();
+          }
+
+          upcomingSection.appendChild(card);
+
+          card.animate(
+            [{ transform: 'translateY(-10px)', opacity: 0 }, { transform: 'translateY(0)', opacity: 1 }],
+            { duration: 300, easing: 'ease-out' }
+          );
+
+          updateVisibility();
+        }
+
+        // --- ABLEHNEN / REFRESH ---
+        if (btn.classList.contains('decline')) {
+          const parentSection = btn.closest('section');
+
+          // Wenn Karte unten → zurück nach oben
+          if (parentSection && parentSection.id === 'upcoming') {
+            pendingSection.appendChild(card);
+
+            // Buttons wiederherstellen
+            const btnBar = card.querySelector('.card-buttons');
+            const declineBtn = btnBar.querySelector('.decline');
+            declineBtn.innerHTML = '<i data-feather="x"></i>';
+            declineBtn.title = 'Ablehnen';
+
+            // "Annehmen" wieder hinzufügen, falls fehlt
+            const acceptMissing = !card.querySelector('.accept');
+            if (acceptMissing) {
+              const newAccept = document.createElement('button');
+              newAccept.classList.add('accept');
+              newAccept.title = 'Annehmen';
+              newAccept.innerHTML = '<i data-feather="check"></i>';
+              btnBar.appendChild(newAccept);
+            }
+
+            feather.replace();
+
+            // Karte leicht ausgegraut anzeigen
+            card.classList.remove('expanded');
+            card.style.opacity = '0.6';
+
+            card.animate(
+              [{ transform: 'translateY(10px)', opacity: 0.5 }, { transform: 'translateY(0)', opacity: 0.6 }],
+              { duration: 300, easing: 'ease-out' }
+            );
+
+          } else {
+            // Falls oben: einfach zuklappen + grau machen
+            card.classList.remove('expanded');
+            card.style.opacity = '0.6';
+          }
+
+          updateVisibility();
+        }
+
+        e.stopPropagation();
+      });
+
+      feather.replace();
+      updateVisibility(); // Initial prüfen
+    </script>
+    
+    <script>
+      feather.replace();
+    </script>
+    
+</body>
+</html>
