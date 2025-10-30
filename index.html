@@ -843,13 +843,43 @@
             { event: '*', schema: 'public', table: 'Database' },
             async (payload) => {
               console.log('Live-Update:', payload);
+
               if (reloadTimeout) clearTimeout(reloadTimeout);
               reloadTimeout = setTimeout(async () => {
                 const currentPin = localStorage.getItem('id');
                 if (currentPin) {
                   await loadCards(currentPin);
                 }
-              }, 500); // minimal verzögert, um Flackern zu vermeiden
+              }, 500);
+
+              // --- Neue Logik: Benachrichtigung bei eigenen Containern ---
+              const currentPin = localStorage.getItem('id');
+              const newData = payload.new || {};
+              const eventType = payload.eventType;
+
+              if (newData.id && newData.id.startsWith(currentPin + '_')) {
+                if (document.hidden && Notification.permission === 'granted') {
+                  const registration = await navigator.serviceWorker.ready;
+
+                  const title = eventType === 'UPDATE'
+                    ? 'Dein Dienst wurde aktualisiert'
+                    : eventType === 'INSERT'
+                    ? 'Neuer Dienst erstellt'
+                    : 'Ein Dienst wurde geändert';
+
+                  const message = `Typ: ${newData.typ || 'Unbekannt'} • Status: ${newData.status || 'geändert'}`;
+
+                  registration.showNotification(title, {
+                    body: message,
+                    icon: '/icon.png',
+                    badge: '/badge.png',
+                    data: { id: newData.id, status: newData.status },
+                    actions: [
+                      { action: 'open', title: 'App öffnen' }
+                    ]
+                  });
+                }
+              }
             }
           )
           .subscribe();
