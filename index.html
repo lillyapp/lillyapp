@@ -355,6 +355,34 @@
     );
 
     document.addEventListener('DOMContentLoaded', () => {
+      // Service Worker für Push-Benachrichtigungen registrieren
+      if ('serviceWorker' in navigator && 'PushManager' in window) {
+        navigator.serviceWorker.register('sw.js').then(reg => {
+          console.log('Service Worker registriert:', reg);
+        }).catch(err => {
+          console.error('Fehler bei der Service Worker Registrierung:', err);
+        });
+      }
+
+      // Berechtigung für Push-Benachrichtigungen anfordern
+      async function initPushNotifications() {
+        if (Notification.permission !== 'granted') {
+          const permission = await Notification.requestPermission();
+          if (permission !== 'granted') {
+            console.log('Push-Benachrichtigungen deaktiviert');
+            return;
+          }
+        }
+        const registration = await navigator.serviceWorker.ready;
+        const subscription = await registration.pushManager.subscribe({
+          userVisibleOnly: true,
+          applicationServerKey: 'BPI4n6n6n2zB3qv2n1NQqz3w8iM3w2fM6aZ2b4eG5g6d7f8g9h0j1k2l3m4n5o6p7' // <-- Ersetze durch deinen echten VAPID Public Key
+        });
+        console.log('Push Subscription:', JSON.stringify(subscription));
+      }
+
+      // Initialisiere Push Notifications nach erfolgreicher Registrierung
+      initPushNotifications();
       const loginScreen = document.getElementById('loginScreen');
       const welcomeDiv = document.querySelector('.welcome');
       const welcomeTitle = document.querySelector('.welcome h1');
@@ -842,6 +870,35 @@
       feather.replace();
       window.featherInitialized = true;
     }
+      
+      // Beispiel: Manuell eine Notification auslösen (zum Testen)
+      async function sendLocalNotification(title, message) {
+        // Falls keine Erlaubnis erteilt wurde
+        if (Notification.permission !== 'granted') {
+          const permission = await Notification.requestPermission();
+          if (permission !== 'granted') return;
+        }
+
+        const registration = await navigator.serviceWorker.ready;
+
+        registration.showNotification(title, {
+          body: message,
+          icon: '/icon.png',
+          badge: '/badge.png',
+          data: { link: window.location.href },
+          actions: [
+            { action: 'open', title: 'App öffnen' },
+            { action: 'dismiss', title: 'Schließen' }
+          ]
+        });
+      }
+
+      // Beispielaufruf:
+      document.addEventListener('keydown', (e) => {
+        if (e.key === 'n') { // Wenn du "n" drückst, kommt eine Test-Nachricht
+          sendLocalNotification('Testbenachrichtigung', 'Dies ist eine lokale Push-Nachricht.');
+        }
+      });
   </script>
 </body>
 </html>
