@@ -9,142 +9,6 @@
   <script src="https://unpkg.com/feather-icons"></script>
   <!-- Supabase SDK zuerst laden -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script>
-      
-      window.addEventListener("load", () => {
-        const url = new URL(window.location.href);
-        if (!url.searchParams.has("v")) {
-          url.searchParams.set("v", Date.now());
-          window.location.replace(url.toString());
-        }
-      });
-    // Supabase initialisieren
-    const supabase = window.supabase.createClient(
-      "https://uewrybgyaanhjoyqpmky.supabase.co",
-      "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVld3J5Ymd5YWFuaGpveXFwbWt5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjE3NjA2ODYsImV4cCI6MjA3NzMzNjY4Nn0.gTv68th-3S2hErX_Dp8RwjU3oZtQXLZFToLGUM5inT8"
-    );
-    
-    document.addEventListener('DOMContentLoaded', async () => {
-      const section = document.querySelector('main section.grid');
-      const upcomingSection = document.getElementById('upcoming');
-      const pendingSection = section;
-      section.innerHTML = '<p style="text-align:center;">Lade Daten...</p>';
-
-      try {
-        const { data, error } = await supabase
-          .from('Database')
-          .select('id, datum, typ, bereich, beschreibung, status, UserName, cardID, role')
-          .eq('id', '1234');
-
-        console.log("Supabase Daten:", data);
-        if (Array.isArray(data)) {
-          data.forEach((d, i) => console.log(`Datensatz ${i}:`, d));
-          console.log("Spalten:", Object.keys(data[0] || {}));
-        } else {
-          console.warn("Keine Daten oder falsches Format:", data);
-        }
-
-        if (error) {
-          section.innerHTML = `<p style="color:red;">Fehler beim Laden: ${error.message}</p>`;
-          console.error("Supabase Fehler:", error);
-          return;
-        }
-
-        if (!data || data.length === 0) {
-          section.innerHTML = '<p style="text-align:center;">Keine Einträge gefunden.</p>';
-          return;
-        }
-
-        // Willkommensnachricht aktualisieren
-        if (data[0].UserName) {
-          const welcomeTitle = document.querySelector('.welcome h1');
-          welcomeTitle.textContent = `Willkommen zurück! ${data[0].UserName}`;
-        }
-        
-        // Zweite Abfrage für Rollendefinition (z. B. 1234_role)
-        const { data: roleData, error: roleError } = await supabase
-          .from('Database')
-          .select('role')
-          .eq('id', '1234_role')
-          .single();
-
-        if (roleError) {
-          console.warn("Keine Rollendefinition gefunden:", roleError.message);
-        }
-
-        // Wenn Rolle 'admin' -> Stift anzeigen
-        if (roleData && roleData.role === 'admin') {
-          const header = document.querySelector('header');
-          const editIcon = document.createElement('div');
-          editIcon.className = 'edit';
-          editIcon.title = 'Admin-Modus';
-          editIcon.innerHTML = '<i data-feather=\"edit-3\"></i>';
-          editIcon.style.cursor = 'pointer';
-          editIcon.onclick = toggleAdminView;
-          header.appendChild(editIcon);
-          feather.replace();
-        }
-
-        section.innerHTML = '';
-        data.forEach(item => {
-          const card = document.createElement('article');
-          card.className = 'card';
-          card.dataset.cardId = item.cardID;
-          card.onclick = () => toggleCard(card);
-
-          const badge = document.createElement('div');
-          badge.className = 'badge-circle jp';
-          badge.textContent = (item.bereich?.substring(0, 2) || 'NA').toUpperCase();
-          card.appendChild(badge);
-
-          const h3 = document.createElement('h3');
-          h3.textContent = item.datum || '';
-          card.appendChild(h3);
-
-          const pInfo = document.createElement('p');
-          pInfo.innerHTML = `<strong>${item.typ || ''}</strong> ${item.bereich || ''}`;
-          card.appendChild(pInfo);
-
-          const contentDiv = document.createElement('div');
-          contentDiv.className = 'card-content';
-          const beschrP = document.createElement('p');
-          beschrP.innerHTML = '<br>' + (item.beschreibung || '');
-          contentDiv.appendChild(beschrP);
-
-          const btnBar = document.createElement('div');
-          btnBar.className = 'card-buttons';
-          const decline = document.createElement('button');
-          decline.className = 'decline';
-          decline.title = 'Ablehnen';
-          decline.innerHTML = '<i data-feather="x"></i>';
-          const accept = document.createElement('button');
-          accept.className = 'accept';
-          accept.title = 'Annehmen';
-          accept.innerHTML = '<i data-feather="check"></i>';
-          btnBar.appendChild(decline);
-          btnBar.appendChild(accept);
-          contentDiv.appendChild(btnBar);
-
-          card.appendChild(contentDiv);
-          // Statusprüfung und Verteilung auf die richtigen Bereiche
-          const status = (item.status || '').toLowerCase();
-          if (status === 'pending') {
-            pendingSection.appendChild(card);
-          } else if (status === 'approved') {
-            upcomingSection.appendChild(card);
-          } else {
-            pendingSection.appendChild(card); // Fallback, falls kein Status gesetzt ist
-          }
-        });
-
-        feather.replace();
-        if (typeof updateVisibility === 'function') setTimeout(() => updateVisibility(), 150);
-      } catch (err) {
-        console.error("Allgemeiner Fehler:", err);
-        section.innerHTML = '<p style="color:red;">Fehler beim Abrufen der Daten.</p>';
-      }
-    });
-  </script>
   <title>Lilly • Web App</title>
   <style>
     :root {
@@ -210,21 +74,15 @@
       color: black;
     }
 
-    .welcome p {
-      color: var(--muted);
-      margin: 6px 0 30px 0;
-      font-size: 1rem;
+    h2 {
+      width: min(100%, var(--container));
+      margin: 40px auto 10px auto; /* richtet sich an der Grid-Breite aus */
+      padding-left: 24px; /* optische Einheit mit main-Padding */
+      font-size: clamp(1.5rem, 3vw, 2rem);
+      font-weight: 600;
+      color: black;
+      text-align: left;
     }
-      
-      h2 {
-        width: min(100%, var(--container));
-        margin: 40px auto 10px auto; /* richtet sich an der Grid-Breite aus */
-        padding-left: 24px; /* optische Einheit mit main-Padding */
-        font-size: clamp(1.5rem, 3vw, 2rem);
-        font-weight: 600;
-        color: black;
-        text-align: left;
-      }
 
     /* Kartenübersicht */
     main {
@@ -241,78 +99,80 @@
       gap: 20px;
     }
 
-      /* Erweiterbare Kartenfunktion */
-      .card {
-        position: relative;
-        background: white;
-        border: 2px solid #000;
-        padding: 18px;
-        border-radius: 12px;
-        overflow: hidden;
-        cursor: pointer;
-        transition: all 0.3s ease;
-      }
+    /* Erweiterbare Kartenfunktion */
+    .card {
+      position: relative;
+      background: white;
+      border: 2px solid #000;
+      padding: 18px;
+      border-radius: 12px;
+      overflow: hidden;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      user-select: none;
+    }
 
-      .card.expanded {
-        background: white;
-      }
+    .card.expanded {
+      background: white;
+    }
 
-      /* Versteckter Bereich */
-      .card-content {
-        max-height: 0;
-        overflow: hidden;
-        transition: max-height 0.4s ease;
-      }
+    /* Versteckter Bereich */
+    .card-content {
+      max-height: 0;
+      overflow: hidden;
+      transition: max-height 0.4s ease;
+    }
 
-      /* Sichtbar, wenn Karte aktiv ist */
-      .card.expanded .card-content {
-        max-height: 300px; /* oder auto, aber das animiert unschön */
-      }
+    /* Sichtbar, wenn Karte aktiv ist */
+    .card.expanded .card-content {
+      max-height: 300px; /* oder auto, aber das animiert unschön */
+    }
 
-      /* Optional: sanfte Innenabstände */
-      .card-content p {
-        margin-top: 10px;
-        font-size: 0.9rem;
-        color: black;
-      }
+    /* Optional: sanfte Innenabstände */
+    .card-content p {
+      margin-top: 10px;
+      font-size: 0.9rem;
+      color: black;
+    }
 
-      /* Kürzel-Kreise oben rechts */
-      .badge-circle {
-        position: absolute;
-        top: 10px;
-        right: 10px;
-        width: 36px;
-        height: 36px;
-        border-radius: 50%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 0.9rem;
-        font-weight: bold;
-        color: #333;
-        border: 2px solid rgba(0, 0, 0, 0.15);
-      }
+    /* Kürzel-Kreise oben rechts */
+    .badge-circle {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.9rem;
+      font-weight: bold;
+      color: #333;
+      border: 2px solid rgba(0, 0, 0, 0.15);
+      user-select: none;
+    }
 
-      /* Beispiel-Farben: pastellig, hell mit dunklerer Randidee */
-      .badge-circle.jp {
-        background: #dbeafe;        /* hellblau */
-        border-color: #93c5fd;      /* etwas dunkler */
-      }
+    /* Beispiel-Farben: pastellig, hell mit dunklerer Randidee */
+    .badge-circle.jp {
+      background: #dbeafe;        /* hellblau */
+      border-color: #93c5fd;      /* etwas dunkler */
+    }
 
-      .badge-circle.pa {
-        background: #fef9c3;        /* hellgelb */
-        border-color: #fde047;      /* kräftiger gelbton */
-      }
-      
-      .badge-circle.sm {
-        background: #fce7f3;        /* hellgelb */
-        border-color: #f9a8d4;      /* kräftiger gelbton */
-      }
-      
-      .badge-circle.vs {
-        background: #dcfce7;        /* hellgelb */
-        border-color: #86efac;      /* kräftiger gelbton */
-      }
+    .badge-circle.pa {
+      background: #fef9c3;        /* hellgelb */
+      border-color: #fde047;      /* kräftiger gelbton */
+    }
+    
+    .badge-circle.sm {
+      background: #fce7f3;        /* rosa */
+      border-color: #f9a8d4;      /* kräftiger rosa */
+    }
+    
+    .badge-circle.vs {
+      background: #dcfce7;        /* hellgrün */
+      border-color: #86efac;      /* kräftiger grün */
+    }
 
     .card h3 {
       margin: 0 0 6px 0;
@@ -323,318 +183,665 @@
       margin: 0;
       font-size: 0.95rem;
     }
-      
-      /* Button-Leiste unterhalb der ausgeklappten Inhalte */
-      .card-buttons {
-        display: none;
-        margin-top: 16px;
-        text-align: right;
-        gap: 10px;
-      }
+    
+    /* Button-Leiste unterhalb der ausgeklappten Inhalte */
+    .card-buttons {
+      display: none;
+      margin-top: 16px;
+      text-align: right;
+      gap: 10px;
+    }
 
-      /* sichtbar, wenn Karte geöffnet */
-      .card.expanded .card-buttons {
-        display: flex;
-        justify-content: flex-end;
-      }
+    /* sichtbar, wenn Karte geöffnet */
+    .card.expanded .card-buttons {
+      display: flex;
+      justify-content: flex-end;
+    }
 
-      /* allgemeines Button-Design */
-      .card-buttons button {
-        border: none;
-        border-radius: 8px;
-        font-size: 0.1rem;
-        font-weight: 600;
-        cursor: pointer;
-        background: white;
-        transition: all 0.2s ease;
-      }
+    /* allgemeines Button-Design */
+    .card-buttons button {
+      border: none;
+      border-radius: 8px;
+      font-size: 0.9rem;
+      font-weight: 600;
+      cursor: pointer;
+      background: white;
+      transition: all 0.2s ease;
+      padding: 6px 14px;
+      user-select: none;
+    }
 
-      /* grün: annehmen */
-      .card-buttons .accept {
-        color: #15803d;
-      }
+    /* grün: annehmen */
+    .card-buttons .accept {
+      color: #15803d;
+    }
 
-      .card-buttons .accept:hover {
-        background: #16a34a;
-        color: white;
-      }
+    .card-buttons .accept:hover {
+      background: #16a34a;
+      color: white;
+    }
 
-      /* rot: ablehnen */
-      .card-buttons .decline {
-        color: #b91c1c;
-      }
+    /* rot: ablehnen */
+    .card-buttons .decline {
+      color: #b91c1c;
+    }
 
-      .card-buttons .decline:hover {
-        background: #dc2626;
-        color: white;
-      }
-      
-      #futureTitle {
-        margin-top: 40px;
-        text-align: left;
-        font-weight: 600;
-      }
-      #futureTitle.visible {
-        display: block;
-        opacity: 1;
-      }
-      
-      .edit {
-        font-size: 1.6rem;
-        margin-left: 12px;
-        transition: transform 0.2s ease;
-      }
-      .edit:hover {
-        transform: scale(1.2);
-      }
-      #adminPanel .grid {
-        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-      }
+    .card-buttons .decline:hover {
+      background: #dc2626;
+      color: white;
+    }
+    
+    #futureTitle {
+      margin-top: 40px;
+      text-align: left;
+      font-weight: 600;
+    }
+    #futureTitle.visible {
+      display: block;
+      opacity: 1;
+    }
+    
+    .edit {
+      font-size: 1.6rem;
+      margin-left: 12px;
+      transition: transform 0.2s ease;
+      cursor: pointer;
+      user-select: none;
+    }
+    .edit:hover {
+      transform: scale(1.2);
+    }
+    #adminPanel .grid {
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    }
 
+    #adminPanel {
+      max-width: var(--container);
+      margin: 20px auto 40px auto;
+      padding: 0 24px;
+      display: none;
+    }
+
+    #adminPanel h2 {
+      margin-bottom: 20px;
+    }
+
+    #adminPanel .user-card {
+      background: white;
+      border: 2px solid #000;
+      border-radius: 12px;
+      padding: 16px;
+      font-size: 1rem;
+      font-weight: 600;
+      text-align: center;
+      user-select: none;
+    }
+
+    #loginScreen {
+      text-align: center;
+      margin-top: 100px;
+    }
+
+    #loginScreen input {
+      padding: 10px;
+      border-radius: 8px;
+      border: 1px solid #ccc;
+      text-align: center;
+      width: 100px;
+      font-size: 1.2rem;
+      letter-spacing: 0.3em;
+      font-weight: bold;
+    }
+
+    #loginScreen button {
+      padding: 10px 20px;
+      border: none;
+      border-radius: 8px;
+      background: #3a6ff8;
+      color: white;
+      cursor: pointer;
+      font-size: 1rem;
+      margin-left: 10px;
+      user-select: none;
+    }
+
+    #loginError {
+      color: red;
+      margin-top: 10px;
+      display: none;
+    }
   </style>
 </head>
 <body>
   <header>
     <div class="emoji" data-feather="user"></div>
-    <div class="settings" title="Einstellungen" onclick="alert('Einstellungen öffnen...')">
+    <div class="settings" title="Einstellungen">
       <i data-feather="settings"></i>
     </div>
   </header>
-  <div id="adminPanel">
-    <div id="userGrid"></div>
+
+  <div id="loginScreen">
+    <h1>Lilly</h1>
+    <p>Bitte 4-stellige PIN eingeben</p>
+    <input id="pinInput" type="password" maxlength="4" placeholder="••••" autocomplete="off" inputmode="numeric" pattern="[0-9]*" />
+    <button id="loginBtn">Login</button>
+    <p id="loginError">Ungültige PIN</p>
   </div>
-  <div class="welcome">
+
+  <div class="welcome" style="display:none;">
     <h1>Willkommen zurück!</h1>
   </div>
-    <h2>Ausstehend</h2>
-    <div id="noPendingMsg" style="text-align:center; opacity:0; transition:opacity 0.3s ease;">Keine ausstehenden Dienste</div>
-<main>
-      <section class="grid">
-      </section>
-      </main>
-    
-    <h2 id="futureTitle" style="opacity:0; display:none; transition:opacity 0.4s ease;">In Zukunft</h2>
-    <br>
-    <main>
-    <section class="grid" id="upcoming"></section>
-    </main>
-    <script>
-      function toggleCard(card) {
-        card.classList.toggle('expanded');
-      }
 
-      const upcomingSection = document.getElementById('upcoming');
-      const pendingSection = document.querySelector('main section.grid');
+  <h2>Ausstehend</h2>
+  <div id="noPendingMsg" style="text-align:center; opacity:0; transition:opacity 0.3s ease;">Keine ausstehenden Dienste</div>
+  <main>
+    <section class="grid" id="pendingGrid"></section>
+  </main>
+  
+  <h2 id="futureTitle" style="opacity:0; display:none; transition:opacity 0.4s ease;">In Zukunft</h2>
+  <main>
+    <section class="grid" id="upcomingGrid"></section>
+  </main>
+
+  <div id="adminPanel" style="visibility:none;">
+    <h2>Benutzerübersicht</h2>
+    <section class="grid" id="userGrid"></section>
+  </div>
+
+  <script>
+    const supabase = window.supabase.createClient(
+      "https://uewrybgyaanhjoyqpmky.supabase.co",
+      "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVld3J5Ymd5YWFuaGpveXFwbWt5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjE3NjA2ODYsImV4cCI6MjA3NzMzNjY4Nn0.gTv68th-3S2hErX_Dp8RwjU3oZtQXLZFToLGUM5inT8"
+    );
+
+    document.addEventListener('DOMContentLoaded', () => {
+      const loginScreen = document.getElementById('loginScreen');
+      const welcomeDiv = document.querySelector('.welcome');
+      const welcomeTitle = document.querySelector('.welcome h1');
+      const pendingGrid = document.getElementById('pendingGrid');
+      const upcomingGrid = document.getElementById('upcomingGrid');
+      const noPendingMsg = document.getElementById('noPendingMsg');
       const futureTitle = document.getElementById('futureTitle');
-      const pendingTitle = document.querySelector('h2'); // "Ausstehend"
+      const adminPanel = document.getElementById('adminPanel');
+      const userGrid = document.getElementById('userGrid');
+      const header = document.querySelector('header');
 
-      // Sichtbarkeit mit echtem Layout-Verschieben
-      function updateVisibility() {
-        const hasPending = pendingSection.children.length > 0;
-        const hasUpcoming = upcomingSection.children.length > 0;
+      // Feather icons initial replacement
+      feather.replace();
 
-        // --- Ausstehend ---
-        // --- Ausstehend ---
-        const noPendingMsg = document.getElementById('noPendingMsg');
+      // Helper: create badge class from typ or bereich
+      function getBadgeClass(item) {
+        // Example mapping by typ or bereich to badge classes
+        // Extend as needed
+        const map = {
+          'jp': 'jp',
+          'pa': 'pa',
+          'sm': 'sm',
+          'vs': 'vs',
+        };
+        // Try typ first, then bereich lowercased
+        if (item.typ && map[item.typ.toLowerCase()]) return map[item.typ.toLowerCase()];
+        if (item.bereich && map[item.bereich.toLowerCase()]) return map[item.bereich.toLowerCase()];
+        return '';
+      }
 
-        if (hasPending) {
-          pendingTitle.style.display = 'block';
-          pendingSection.style.display = 'grid';
-          requestAnimationFrame(() => {
-            pendingTitle.style.opacity = '1';
-            pendingSection.style.opacity = '1';
+      // Create a card element
+      function createCard(item) {
+        const card = document.createElement('article');
+        card.className = 'card';
+        card.tabIndex = 0; // make focusable for accessibility
+
+        // Badge circle with initials from typ or bereich
+        let badgeText = '';
+        if (item.typ) badgeText = item.typ.slice(0, 2).toLowerCase();
+        else if (item.bereich) badgeText = item.bereich.slice(0, 2).toLowerCase();
+        const badgeClass = getBadgeClass(item);
+
+        card.innerHTML = `
+          <div class="badge-circle ${badgeClass}">${badgeText}</div>
+          <h3>${item.datum || ''}</h3>
+          <p><strong>${item.typ || ''}</strong> ${item.bereich || ''}</p>
+          <p>${item.beschreibung || ''}</p>
+          <p>Status: <strong>${item.status || 'pending'}</strong></p>
+          <p>Erstellt von: <strong>${item.UserName || 'Unbekannt'}</strong></p>
+          <div class="card-content" style="max-height:0; overflow:hidden;">
+            <p>${item.beschreibung || ''}</p>
+          </div>
+          <div class="card-buttons">
+            <button class="accept">Annehmen</button>
+            <button class="decline">Ablehnen</button>
+          </div>
+        `;
+
+        // Initially hide card-content and buttons
+        const cardContent = card.querySelector('.card-content');
+        const buttons = card.querySelector('.card-buttons');
+
+        // Admin-Buttons ersetzen, wenn Rolle admin
+        if ((localStorage.getItem('role') || '').toLowerCase() === 'admin') {
+          console.log('Admin-Rolle erkannt, zeige Admin-Buttons');
+          buttons.innerHTML = `
+            <button class="withdraw">Zurückziehen</button>
+            <button class="edit-entry">Bearbeiten</button>
+          `;
+          buttons.style.display = 'flex';
+          // Eventlistener für Withdraw
+          const withdrawBtn = buttons.querySelector('.withdraw');
+          withdrawBtn.addEventListener('click', async (e) => {
+            e.stopPropagation();
+            if (confirm('Diesen Eintrag wirklich löschen?')) {
+              const { error } = await supabase
+                .from('Database')
+                .update({ status: 'deleted' })
+                .eq('id', item.id);
+              if (error) {
+              } else {
+                card.style.opacity = '0.5';
+                card.style.pointerEvents = 'none';
+              }
+            }
           });
-          noPendingMsg.style.opacity = '0';
-          noPendingMsg.style.pointerEvents = 'none';
+          // Eventlistener für Edit
+          const editBtn = buttons.querySelector('.edit-entry');
+          editBtn.addEventListener('click', async (e) => {
+            e.stopPropagation();
+            openAdminForm();
+            document.getElementById('datumInput').value = item.datum || '';
+            document.getElementById('typInput').value = item.typ || '';
+            document.getElementById('bereichInput').value = item.bereich || '';
+            document.getElementById('beschreibungInput').value = item.beschreibung || '';
+            document.getElementById('saveNew').textContent = 'Änderungen speichern';
+            // Setze die editId für spätere Updates
+            document.getElementById('saveNew').dataset.editId = item.id;
+          });
         } else {
-          pendingTitle.style.display = 'block';
-          pendingSection.style.display = 'none';
-          pendingTitle.style.opacity = '1';
-          noPendingMsg.style.opacity = '1';
-          noPendingMsg.style.pointerEvents = 'auto';
+          // Toggle expand on click or enter key
+          function toggleExpand() {
+            const expanded = card.classList.contains('expanded');
+            if (expanded) {
+              card.classList.remove('expanded');
+              cardContent.style.maxHeight = '0';
+              buttons.style.display = 'none';
+            } else {
+              card.classList.add('expanded');
+              cardContent.style.maxHeight = cardContent.scrollHeight + 'px';
+              buttons.style.display = 'flex';
+            }
+          }
+
+          card.addEventListener('click', (e) => {
+            // Avoid toggling when clicking buttons
+            if (e.target.tagName.toLowerCase() === 'button') return;
+            toggleExpand();
+          });
+
+          card.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault();
+              toggleExpand();
+            }
+          });
+
+          // Button event handlers
+          const acceptBtn = buttons.querySelector('.accept');
+          const declineBtn = buttons.querySelector('.decline');
+
+          acceptBtn.addEventListener('click', async (e) => {
+            e.stopPropagation();
+            await updateStatus(item.id, 'approved');
+          });
+
+          declineBtn.addEventListener('click', async (e) => {
+            e.stopPropagation();
+            // Karte visuell ausgrauen und deaktivieren
+            card.style.opacity = '0.5';
+            card.style.pointerEvents = 'none';
+            await updateStatus(item.id, 'pending');
+          });
         }
 
-        // --- In Zukunft ---
-        if (hasUpcoming) {
-          futureTitle.style.display = 'block';
-          upcomingSection.style.display = 'grid';
-          requestAnimationFrame(() => {
-            futureTitle.style.opacity = '1';
-            upcomingSection.style.opacity = '1';
-            upcomingSection.style.position = 'relative';
-            upcomingSection.style.zIndex = '2';
-          });
-        } else {
-          futureTitle.style.opacity = '0';
-          upcomingSection.style.opacity = '0';
-          setTimeout(() => {
-            futureTitle.style.display = 'none';
-            upcomingSection.style.display = 'none';
-            upcomingSection.style.position = 'absolute';
-            upcomingSection.style.zIndex = '0';
-          }, 400);
+        return card;
+      }
+
+      // Update status in Supabase and reload cards
+      async function updateStatus(id, newStatus) {
+        try {
+          const { error } = await supabase
+            .from('Database')
+            .update({ status: newStatus })
+            .eq('id', id);
+          if (error) {
+            return;
+          }
+          // Reload cards with current pin
+          const pin = localStorage.getItem('pin');
+          if (pin) {
+            await loadCards(pin);
+          }
+        } catch (err) {
         }
       }
 
-      // Klicks abfangen
-      document.addEventListener('click', async function(e) {
-        const btn = e.target.closest('button');
-        if (!btn) return;
-        const card = btn.closest('.card');
+      // Load cards and sort by status
+      async function loadCards(pin) {
+        pendingGrid.innerHTML = '<p style="text-align:center;">Lade Daten...</p>';
+        upcomingGrid.innerHTML = '';
+        noPendingMsg.style.opacity = '0';
+        futureTitle.style.opacity = '0';
+        futureTitle.style.display = 'none';
 
-        // --- ANNEHMEN ---
-        if (btn.classList.contains('accept')) {
-          card.classList.remove('expanded');
-          card.style.opacity = '1';
-          card.style.pointerEvents = 'auto';
-
-          // "Annehmen"-Button entfernen
-          const acceptBtn = card.querySelector('.accept');
-          if (acceptBtn) acceptBtn.remove();
-
-          // Supabase-Update für "approved"
-          console.log("Statusänderung für Card-ID:", card.dataset.cardId);
-          const updateResponse = await supabase
-            .from('Database')
-            .update({ status: 'approved' })
-            .eq('cardID', card.dataset.cardId);
-          console.log("Status aktualisiert auf 'approved':", updateResponse);
-
-          // "Ablehnen" → Refresh-Symbol
-          const declineBtn = card.querySelector('.decline');
-          if (declineBtn) {
-            declineBtn.innerHTML = '<i data-feather="refresh-ccw"></i>';
-            declineBtn.title = 'Zurück nach oben';
-            feather.replace();
-          }
-
-          upcomingSection.appendChild(card);
-
-          card.animate(
-            [{ transform: 'translateY(-10px)', opacity: 0 }, { transform: 'translateY(0)', opacity: 1 }],
-            { duration: 300, easing: 'ease-out' }
-          );
-
-          updateVisibility();
-        }
-
-        // --- ABLEHNEN / REFRESH ---
-        if (btn.classList.contains('decline')) {
-          const parentSection = btn.closest('section');
-
-          // Wenn Karte unten → zurück nach oben
-          if (parentSection && parentSection.id === 'upcoming') {
-            pendingSection.appendChild(card);
-
-            // Buttons wiederherstellen
-            const btnBar = card.querySelector('.card-buttons');
-            const declineBtn = btnBar.querySelector('.decline');
-            declineBtn.innerHTML = '<i data-feather="x"></i>';
-            declineBtn.title = 'Ablehnen';
-
-            // "Annehmen" wieder hinzufügen, falls fehlt
-            const acceptMissing = !card.querySelector('.accept');
-            if (acceptMissing) {
-              const newAccept = document.createElement('button');
-              newAccept.classList.add('accept');
-              newAccept.title = 'Annehmen';
-              newAccept.innerHTML = '<i data-feather="check"></i>';
-              btnBar.appendChild(newAccept);
-            }
-
-            feather.replace();
-
-            // Karte leicht ausgegraut anzeigen
-            card.classList.remove('expanded');
-            card.style.opacity = '0.6';
-
-            card.animate(
-              [{ transform: 'translateY(10px)', opacity: 0.5 }, { transform: 'translateY(0)', opacity: 0.6 }],
-              { duration: 300, easing: 'ease-out' }
-            );
-
+        try {
+          let data, error;
+          // Prüfe Rolle aus localStorage
+          if (localStorage.getItem('role') === 'admin') {
+            // Admin sieht alle Container, die über connected_user_A mit seiner ID verbunden sind
+            const result = await supabase
+              .from('Database')
+              .select('*')
+              .eq('connected_user_A', pin);
+            data = result.data;
+            error = result.error;
           } else {
-            // Falls oben: einfach zuklappen + grau machen
-            card.classList.remove('expanded');
-            card.style.opacity = '0.6';
+            // Standardabfrage für User
+            const result = await supabase
+              .from('Database')
+              .select('*')
+              .ilike('id', `${pin}_%`);
+            data = result.data;
+            error = result.error;
           }
 
-          // Supabase-Update für "pending"
-          console.log("Statusänderung für Card-ID:", card.dataset.cardId);
-          const updateResponse = await supabase
-            .from('Database')
-            .update({ status: 'pending' })
-            .eq('cardID', card.dataset.cardId);
-          console.log("Status aktualisiert auf 'pending':", updateResponse);
+          if (error) {
+            pendingGrid.innerHTML = `<p style="color:red;">Fehler beim Laden: ${error.message}</p>`;
+            return;
+          }
 
-          updateVisibility();
+          if (!data || data.length === 0) {
+            pendingGrid.innerHTML = '<p style="text-align:center;">Keine Einträge gefunden.</p>';
+            return;
+          }
+
+          // Clear grids
+          pendingGrid.innerHTML = '';
+          upcomingGrid.innerHTML = '';
+
+          // Filter by status
+          const pendingItems = data.filter(d => d.status === 'pending');
+          const approvedItems = data.filter(d => d.status === 'approved');
+
+          // Show pending or noPendingMsg
+          if (pendingItems.length === 0) {
+            noPendingMsg.style.opacity = '1';
+          } else {
+            noPendingMsg.style.opacity = '0';
+            pendingItems.forEach(item => {
+              const card = createCard(item);
+              pendingGrid.appendChild(card);
+            });
+          }
+
+          // Show approved in upcoming section
+          if (approvedItems.length > 0) {
+            futureTitle.style.display = 'block';
+            setTimeout(() => { futureTitle.style.opacity = '1'; }, 50);
+            approvedItems.forEach(item => {
+              const card = createCard(item);
+              upcomingGrid.appendChild(card);
+            });
+          } else {
+            futureTitle.style.opacity = '0';
+            futureTitle.style.display = 'none';
+          }
+        } catch (err) {
+          pendingGrid.innerHTML = `<p style="color:red;">Fehler beim Laden: ${err.message}</p>`;
+        }
+      }
+
+      // Add admin edit button and show admin panel
+      function addAdminButton() {
+        // Check if already added
+        if (document.querySelector('.edit')) return;
+        const editIcon = document.createElement('div');
+        editIcon.className = 'edit';
+        editIcon.title = 'Neuen Dienst hinzufügen';
+        editIcon.innerHTML = '<i data-feather="edit-3"></i>';
+        editIcon.onclick = openAdminForm;
+        header.appendChild(editIcon);
+        feather.replace();
+        adminPanel.style.display = 'block';
+        loadUsers();
+      }
+
+      // Load users for admin panel
+      async function loadUsers() {
+        userGrid.innerHTML = '<p style="text-align:center;">Lade Benutzer...</p>';
+        try {
+          const { data, error } = await supabase
+            .from('Database')
+            .select('UserName, id')
+            .not('id', 'is', null);
+
+          if (error) {
+            userGrid.innerHTML = `<p style="color:red;">Fehler beim Laden: ${error.message}</p>`;
+            return;
+          }
+
+          if (!data || data.length === 0) {
+            userGrid.innerHTML = '<p style="text-align:center;">Keine Benutzer gefunden.</p>';
+            return;
+          }
+
+          userGrid.innerHTML = '';
+          // Unique users by id
+          const uniqueUsers = [...new Map(data.map(u => [u.id, u])).values()];
+          uniqueUsers.forEach(user => {
+            const userCard = document.createElement('div');
+            userCard.className = 'user-card';
+            userCard.textContent = `${user.UserName} (${user.id})`;
+            userGrid.appendChild(userCard);
+          });
+        } catch (err) {
+          userGrid.innerHTML = `<p style="color:red;">Fehler beim Laden: ${err.message}</p>`;
+        }
+      }
+
+      // Open admin form to add new service
+      async function openAdminForm() {
+        if(document.getElementById('adminForm')) return; // prevent multiple forms
+        const formHtml = `
+          <div id="adminForm" style="position:fixed; top:50%; left:50%; transform:translate(-50%,-50%); background:white; border:2px solid black; border-radius:10px; padding:20px; z-index:1000; max-width: 400px; width: 90%;">
+            <h3>Neuen Dienst anlegen</h3>
+            <label for="userSelect">User:</label>
+            <select id="userSelect" style="width:100%; padding:8px; margin-bottom:10px;"></select>
+            <label for="datumInput">Datum:</label>
+            <input id="datumInput" type="date" style="width:100%; padding:8px; margin-bottom:10px;" />
+            <label for="typInput">Typ:</label>
+            <input id="typInput" type="text" placeholder="Typ" style="width:100%; padding:8px; margin-bottom:10px;" />
+            <label for="bereichInput">Bereich:</label>
+            <input id="bereichInput" type="text" placeholder="Bereich" style="width:100%; padding:8px; margin-bottom:10px;" />
+            <label for="beschreibungInput">Beschreibung:</label>
+            <textarea id="beschreibungInput" placeholder="Beschreibung" style="width:100%; padding:8px; margin-bottom:10px;"></textarea>
+            <div style="text-align:right;">
+              <button id="saveNew" style="background:#3a6ff8; color:white; border:none; border-radius:8px; padding:8px 16px; cursor:pointer; user-select:none;">Speichern</button>
+              <button id="cancelNew" style="margin-left:10px; border:none; border-radius:8px; padding:8px 16px; cursor:pointer; user-select:none;">Abbrechen</button>
+            </div>
+          </div>
+          <div id="adminFormBackdrop" style="position:fixed; top:0; left:0; width:100vw; height:100vh; background:#00000088; z-index:999;"></div>
+        `;
+        document.body.insertAdjacentHTML('beforeend', formHtml);
+        feather.replace();
+
+        const { data: users, error } = await supabase
+          .from('Database')
+          .select('UserName, id')
+          .not('id', 'is', null);
+
+        // Nur Datensätze mit IDs, die genau 4 Zeichen lang sind
+        const filteredUsers = (users || []).filter(u => u.id && u.id.length === 4);
+
+        const userSelect = document.getElementById('userSelect');
+        if (filteredUsers) {
+          const uniqueUsers = [...new Map(filteredUsers.map(u => [u.id, u])).values()];
+          uniqueUsers.forEach(u => {
+            const opt = document.createElement('option');
+            opt.value = u.id;
+            opt.textContent = `${u.UserName} (${u.id})`;
+            userSelect.appendChild(opt);
+          });
         }
 
-        e.stopPropagation();
+        document.getElementById('cancelNew').onclick = () => {
+          document.getElementById('adminForm').remove();
+          document.getElementById('adminFormBackdrop').remove();
+        };
+        document.getElementById('adminFormBackdrop').onclick = () => {
+          document.getElementById('adminForm').remove();
+          document.getElementById('adminFormBackdrop').remove();
+        };
+
+        document.getElementById('saveNew').onclick = async () => {
+          const userId = userSelect.value;
+          const datum = document.getElementById('datumInput').value;
+          const typ = document.getElementById('typInput').value.trim();
+          const bereich = document.getElementById('bereichInput').value.trim();
+          const beschreibung = document.getElementById('beschreibungInput').value.trim();
+
+          if (!userId || !datum || !typ || !bereich || !beschreibung) {
+            return;
+          }
+
+          const saveButton = document.getElementById('saveNew');
+          if (saveButton.textContent === 'Änderungen speichern' && saveButton.dataset.editId) {
+            // Bearbeitungsmodus: bestehenden Datensatz aktualisieren
+            const { error } = await supabase
+              .from('Database')
+              .update({ datum, typ, bereich, beschreibung })
+              .eq('id', saveButton.dataset.editId);
+            if (error) {
+              return;
+            }
+            document.getElementById('adminForm').remove();
+            document.getElementById('adminFormBackdrop').remove();
+            const currentPin = localStorage.getItem('id');
+            if (currentPin) await loadCards(currentPin);
+          } else {
+            // Neuer Eintrag
+            // Lade Namen des Erstellers anhand der PIN (localStorage id)
+            const creatorPin = localStorage.getItem('id');
+            let creatorName = 'Unbekannt';
+            const { data: creatorData, error: creatorError } = await supabase
+              .from('Database')
+              .select('UserName')
+              .eq('id', creatorPin)
+              .single();
+            if (!creatorError && creatorData && creatorData.UserName) {
+              creatorName = creatorData.UserName;
+            }
+            const randomPart = Math.floor(100000 + Math.random() * 900000);
+            const id = `${userId}_${randomPart}`;
+            const { error } = await supabase
+              .from('Database')
+              .insert([{ id, datum, typ, bereich, beschreibung, connected_user_A: localStorage.getItem('id'), UserName: creatorName, status: 'pending' }]);
+            if (error) {
+              return;
+            }
+            document.getElementById('adminForm').remove();
+            document.getElementById('adminFormBackdrop').remove();
+            const currentPin = localStorage.getItem('id');
+            if (currentPin) await loadCards(currentPin);
+          }
+        };
+      }
+
+      // Login button event
+      document.getElementById('loginBtn').addEventListener('click', async () => {
+        const pinInput = document.getElementById('pinInput');
+        const pin = pinInput.value.trim();
+        const loginError = document.getElementById('loginError');
+
+        if (pin.length !== 4) {
+          loginError.style.display = 'block';
+          return;
+        }
+
+        loginError.style.display = 'none';
+
+        const { data: userData, error } = await supabase
+          .from('Database')
+          .select('*')
+          .eq('id', pin);
+
+        if (error || !userData || userData.length === 0) {
+          loginError.style.display = 'block';
+          return;
+        }
+
+        loginError.style.display = 'none';
+        loginScreen.style.display = 'none';
+        welcomeDiv.style.display = 'block';
+
+        const user = userData[0];
+        localStorage.setItem('id', pin);
+        welcomeTitle.textContent = `Willkommen zurück, ${user.UserName}!`;
+
+        // Rolle im localStorage setzen
+        if (user.role === 'admin') {
+          localStorage.setItem('role', 'admin');
+        } else {
+          localStorage.setItem('role', 'user');
+        }
+
+        // Wenn admin -> Stift anzeigen und Admin Panel zeigen
+        if (user.role === 'admin') {
+          addAdminButton();
+          // Titel "Ausstehend" zu "Übersicht" ändern
+          const h2s = document.querySelectorAll('h2');
+          if (h2s.length > 0) {
+            h2s[0].textContent = 'Übersicht';
+          }
+        } else {
+          adminPanel.style.display = 'none';
+          const editIcon = document.querySelector('.edit');
+          if(editIcon) editIcon.remove();
+        }
+
+        await loadCards(pin);
+
+        // Echtzeit-Aktualisierung aktivieren (Supabase Realtime)
+        let reloadTimeout;
+        const channel = supabase
+          .channel('live-updates')
+          .on('postgres_changes',
+            { event: '*', schema: 'public', table: 'Database' },
+            async (payload) => {
+              console.log('Live-Update:', payload);
+              if (reloadTimeout) clearTimeout(reloadTimeout);
+              reloadTimeout = setTimeout(async () => {
+                const currentPin = localStorage.getItem('id');
+                if (currentPin) {
+                  await loadCards(currentPin);
+                }
+              }, 500); // minimal verzögert, um Flackern zu vermeiden
+            }
+          )
+          .subscribe();
       });
 
+      // Optional: allow Enter key on PIN input to trigger login
+      document.getElementById('pinInput').addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          document.getElementById('loginBtn').click();
+        }
+      });
+    });
+  </script>
+
+  <script>
+    if (!window.featherInitialized) {
       feather.replace();
-      
-      async function toggleAdminView() {
-        const mainContent = document.querySelector('main');
-        const welcome = document.querySelector('.welcome');
-        const headers = document.querySelectorAll('h2');
-        const adminPanel = document.getElementById('adminPanel');
-
-        const isVisible = adminPanel.style.display === 'block';
-        if (isVisible) {
-          // Admin-Ansicht schließen
-          adminPanel.style.display = 'none';
-          mainContent.style.display = 'block';
-          headers.forEach(h => h.style.display = 'block');
-          welcome.style.display = 'block';
-          return;
-        }
-
-        // Normale Ansicht ausblenden
-        mainContent.style.display = 'none';
-        headers.forEach(h => h.style.display = 'none');
-        welcome.style.display = 'none';
-
-        // Admin-Panel zeigen
-        adminPanel.style.display = 'block';
-        const userGrid = document.getElementById('userGrid');
-        userGrid.innerHTML = '<p>Lade Benutzer...</p>';
-
-        // Benutzer abrufen
-        const { data, error } = await supabase
-          .from('Database')
-          .select('id, UserName, role')
-          .order('UserName');
-
-        if (error) {
-          userGrid.innerHTML = `<p style="color:red;">Fehler beim Laden der Benutzer: ${error.message}</p>`;
-          return;
-        }
-
-        userGrid.innerHTML = '';
-        data.forEach(user => {
-          const card = document.createElement('div');
-          card.className = 'card';
-          card.innerHTML = `
-            <h3>${user.UserName}</h3>
-            <p>Rolle: ${user.role || 'unbekannt'}</p>
-            <p>ID: ${user.id}</p>
-          `;
-          userGrid.appendChild(card);
-        });
-      }
-        
-    </script>
-    
-    <script>
-        if (!window.featherInitialized) {
-          feather.replace();
-          window.featherInitialized = true;
-        }
-    </script>
-    
-    
-    
+      window.featherInitialized = true;
+    }
+  </script>
 </body>
 </html>
