@@ -277,6 +277,42 @@
     .fade-enter-active {
       opacity: 1;
     }
+
+    /* Ripple-Effekt beim Öffnen */
+    @keyframes rippleExpand {
+      0% {
+        transform: scale(0.7);
+        opacity: 0;
+      }
+      60% {
+        transform: scale(1.05);
+        opacity: 1;
+      }
+      100% {
+        transform: scale(1);
+        opacity: 1;
+      }
+    }
+
+    /* sanftes Zusammenziehen beim Schließen */
+    @keyframes rippleClose {
+      0% {
+        transform: scale(1);
+        opacity: 1;
+      }
+      100% {
+        transform: scale(0.9);
+        opacity: 0;
+      }
+    }
+
+    #skillDetail.ripple-open {
+      animation: rippleExpand 0.4s ease forwards;
+    }
+
+    #skillDetail.ripple-close {
+      animation: rippleClose 0.3s ease forwards;
+    }
   </style>
 </head>
 <body>
@@ -328,8 +364,7 @@
           scroll-snap-type:x mandatory;
           scroll-behavior:smooth;
           -webkit-overflow-scrolling:touch;
-          padding:10px 20px;
-          margin-bottom:34px;
+          padding: 0px 20px;
         "
       >
         <div id="notificationsCard"
@@ -398,6 +433,41 @@
         </div>
       </div>
     </div>
+    <!-- Skill Meter Section -->
+    <section id="skillMeter" style="width:min(100%,var(--container));padding:20px;margin-top:8px;margin-bottom:30px;">
+      <div class="skill-bars" style="display:flex;align-items:center;gap:20px;justify-content:space-between;">
+        <i data-feather="tool" style="width:18px;height:18px;align-self:center;"></i>
+        <div class="skill-bar" data-skill="fach" style="flex:1;height:16px;background:#e5e7eb;border-radius:8px;cursor:pointer;overflow:hidden;">
+          <div class="fill" style="height:100%;width:0%;background:#3A6FF8;border-radius:8px;"></div>
+        </div>
+        <i data-feather="user" style="width:18px;height:18px;align-self:center;"></i>
+        <div class="skill-bar" data-skill="pers" style="flex:1;height:16px;background:#e5e7eb;border-radius:8px;cursor:pointer;overflow:hidden;">
+          <div class="fill" style="height:100%;width:0%;background:#16a34a;border-radius:8px;"></div>
+        </div>
+        <i data-feather="users" style="width:18px;height:18px;align-self:center;"></i>
+        <div class="skill-bar" data-skill="sozial" style="flex:1;height:16px;background:#e5e7eb;border-radius:8px;cursor:pointer;overflow:hidden;">
+          <div class="fill" style="height:100%;width:0%;background:#f59e0b;border-radius:8px;"></div>
+        </div>
+      </div>
+      <div id="skillDetail" style="display:none;position:relative;background:#f3f4f6;border-radius:12px;padding:16px;margin-top:14px;">
+        <div class="triangle" style="position:absolute;top:-10px;left:50%;transform:translateX(-50%);width:0;height:0;border-left:10px solid transparent;border-right:10px solid transparent;border-bottom:10px solid #f3f4f6;"></div>
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;">
+          <h3 id="skillTitle" style="margin:0;font-size:1.1rem;font-weight:700;">Kompetenz</h3>
+          <div style="display:flex;align-items:center;gap:8px;">
+            <i data-feather="zap" style="width:1.1rem;height:1.1rem;"></i>
+          </div>
+        </div>
+        <p id="skillText" style="margin-top:8px;color:var(--muted);line-height:1.5;font-size:0.95rem;"></p>
+        <div id="skillColorCircle" style="position:absolute;bottom:-10px;right:10px;width:20px;height:20px;border-radius:50%;border:2px solid #fff;box-shadow:0 0 4px rgba(0,0,0,0.1);background:#3A6FF8;"></div>
+        <div id="colorPalette" style="display:none;position:absolute;bottom:20px;right:0;flex-direction:row;gap:6px;padding:6px;background:#fff;border-radius:12px;box-shadow:0 2px 10px rgba(0,0,0,0.1);z-index:10;">
+          <div class="color-option" data-color="#3A6FF8" style="width:20px;height:20px;border-radius:50%;background:#3A6FF8;cursor:pointer;"></div>
+          <div class="color-option" data-color="#16a34a" style="width:20px;height:20px;border-radius:50%;background:#16a34a;cursor:pointer;"></div>
+          <div class="color-option" data-color="#f59e0b" style="width:20px;height:20px;border-radius:50%;background:#f59e0b;cursor:pointer;"></div>
+          <div class="color-option" data-color="#dc2626" style="width:20px;height:20px;border-radius:50%;background:#dc2626;cursor:pointer;"></div>
+          <div class="color-option" data-color="#6366f1" style="width:20px;height:20px;border-radius:50%;background:#6366f1;cursor:pointer;"></div>
+        </div>
+      </div>
+    </section>
     <!-- "In Zukunft" Section -->
     <section class="app-section" style="width:min(100%,var(--container));padding-left:20px;padding-right:20px;margin-top:0;">
       <div style="display:flex;align-items:center;justify-content:space-between;position:relative;">
@@ -1123,6 +1193,11 @@
       const user = userData[0];
       localStorage.setItem('id', pin);
       localStorage.setItem('role', user.role || 'user');
+      localStorage.setItem('userColors', JSON.stringify({
+        fach: user.color_f || '#3A6FF8',
+        pers: user.color_p || '#16a34a',
+        sozial: user.color_s || '#f59e0b'
+      }));
       document.cookie = `lilly_pin=${pin}; path=/; max-age=${60*60*24*30}; SameSite=Lax`;
       console.log("[Login] Cookie gespeichert für PIN:", pin);
 
@@ -1188,6 +1263,176 @@
       bubble.textContent = greetings[Math.floor(Math.random() * greetings.length)];
     }
 
+  </script>
+  <script>
+    // SkillMeter JS
+    document.addEventListener('DOMContentLoaded', async () => {
+      const bars = document.querySelectorAll('#skillMeter .skill-bar .fill');
+      bars.forEach(bar => {
+        bar.style.transition = 'width 1s ease-out';
+        bar.style.width = '0%';
+      });
+      // Farben aus Supabase holen & in localStorage speichern
+      let userColors = {};
+      const userId = localStorage.getItem('id');
+      if (userId) {
+        try {
+          // Farben aus Supabase laden
+          const { data, error } = await supabase
+            .from('Database')
+            .select('color_f, color_p, color_s')
+            .eq('id', userId)
+            .single();
+          userColors = {
+            fach: (data && data.color_f) || '#3A6FF8',
+            pers: (data && data.color_p) || '#16a34a',
+            sozial: (data && data.color_s) || '#f59e0b'
+          };
+          // In localStorage speichern
+          localStorage.setItem('userColors', JSON.stringify(userColors));
+        } catch (err) {
+          userColors = {
+            fach: '#3A6FF8',
+            pers: '#16a34a',
+            sozial: '#f59e0b'
+          };
+        }
+      } else {
+        userColors = {
+          fach: '#3A6FF8',
+          pers: '#16a34a',
+          sozial: '#f59e0b'
+        };
+      }
+      bars.forEach(bar => {
+        const level = Math.floor(Math.random() * 4) + 1;
+        const width = level * 25;
+        bar.style.width = width + '%';
+        if (bar.dataset.skill === 'fach') bar.style.background = userColors.fach || '#3A6FF8';
+        if (bar.dataset.skill === 'pers') bar.style.background = userColors.pers || '#16a34a';
+        if (bar.dataset.skill === 'sozial') bar.style.background = userColors.sozial || '#f59e0b';
+      });
+
+      const skillDetail = document.getElementById('skillDetail');
+      const skillTitle = document.getElementById('skillTitle');
+      const skillText = document.getElementById('skillText');
+      const triangle = skillDetail.querySelector('.triangle');
+
+      const skillMap = {
+        fach: 'Fachkompetenz',
+        pers: 'Persönlichkeitskompetenz',
+        sozial: 'Sozialkompetenz'
+      };
+
+      document.querySelectorAll('#skillMeter .skill-bar').forEach((bar, index) => {
+        bar.addEventListener('click', (e) => {
+          const key = bar.dataset.skill;
+          const isVisible = skillDetail.style.display === 'block';
+
+          if (isVisible && skillTitle.textContent === skillMap[key]) {
+            skillDetail.classList.remove('ripple-open');
+            skillDetail.classList.add('ripple-close');
+            setTimeout(() => {
+              skillDetail.style.display = 'none';
+              skillDetail.classList.remove('ripple-close');
+            }, 280);
+            return;
+          }
+
+          const rect = bar.getBoundingClientRect();
+          const parentRect = bar.parentElement.getBoundingClientRect();
+          const centerX = rect.left - parentRect.left + rect.width / 2;
+          triangle.style.left = `${centerX}px`;
+
+          skillTitle.textContent = skillMap[key] || 'Kompetenz';
+          skillText.textContent =
+            'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed ut orci vitae odio aliquet malesuada. Curabitur in tortor nec nulla facilisis luctus. Vestibulum ante ipsum primis in faucibus orci luctus et ultrices posuere cubilia curae; Donec a eros vel justo.';
+
+          // Set circle color according to skill and userColors
+          const colorMap = {
+            fach: userColors.fach || '#3A6FF8',
+            pers: userColors.pers || '#16a34a',
+            sozial: userColors.sozial || '#f59e0b'
+          };
+          const circle = document.getElementById('skillColorCircle');
+          if (circle) {
+            circle.style.background = colorMap[key];
+          }
+          // Update the corresponding bar (.fill) color as well
+          const barFill = bar.querySelector('.fill');
+          if (barFill) barFill.style.background = colorMap[key];
+
+          skillDetail.style.display = 'block';
+          skillDetail.classList.remove('ripple-close');
+          skillDetail.classList.add('ripple-open');
+          feather.replace();
+        });
+      });
+
+      // ========== Color Palette Feature ==========
+      const colorCircle = document.getElementById('skillColorCircle');
+      const colorPalette = document.getElementById('colorPalette');
+      let activeSkill = null;
+
+      // Toggle color palette when clicking on main circle
+      colorCircle.addEventListener('click', (e) => {
+        e.stopPropagation();
+        colorPalette.style.display = (colorPalette.style.display === 'flex') ? 'none' : 'flex';
+      });
+
+      // Hide palette when clicking elsewhere
+      document.addEventListener('click', (e) => {
+        if (!colorPalette.contains(e.target) && e.target !== colorCircle) {
+          colorPalette.style.display = 'none';
+        }
+      });
+
+      // Apply new color when selecting a color option
+      colorPalette.querySelectorAll('.color-option').forEach(opt => {
+        opt.addEventListener('click', async () => {
+          const newColor = opt.dataset.color;
+          if (!activeSkill) return;
+
+          // Update circle and bar color
+          colorCircle.style.background = newColor;
+          const bar = document.querySelector(`.skill-bar[data-skill="${activeSkill}"] .fill`);
+          if (bar) bar.style.background = newColor;
+
+          // Update local storage
+          const userColors = JSON.parse(localStorage.getItem('userColors') || '{}');
+          userColors[activeSkill] = newColor;
+          localStorage.setItem('userColors', JSON.stringify(userColors));
+
+          // Speichern in Supabase
+          const userId = localStorage.getItem('id');
+          if (userId) {
+            const columnMap = {
+              fach: 'color_f',
+              pers: 'color_p',
+              sozial: 'color_s'
+            };
+            const column = columnMap[activeSkill];
+            if (column) {
+              const { error } = await supabase
+                .from('Database')
+                .update({ [column]: newColor })
+                .eq('id', userId);
+              if (error) console.error('Fehler beim Speichern der Farbe:', error);
+            }
+          }
+
+          colorPalette.style.display = 'none';
+        });
+      });
+
+      // Track which skill is currently active
+      document.querySelectorAll('#skillMeter .skill-bar').forEach(bar => {
+        bar.addEventListener('click', () => {
+          activeSkill = bar.dataset.skill;
+        });
+      });
+      // ========== End Color Palette Feature ==========
+    });
   </script>
 </body>
 </html>
