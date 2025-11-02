@@ -660,60 +660,19 @@
     // ---------- Karten-Renderer (Task-Stil) ----------
 
     // ---------- SYNC Update Helper ----------
-    async function syncUpdateByRelation(relationId, updateData, originalId = null) {
-      const currentPin = localStorage.getItem('id');
-      let attempts = 0;
-      const maxAttempts = 5;
+    function reverseId(id) {
+      const parts = id.split('_');
+      if (parts.length >= 3) return `${parts[1]}_${parts[0]}_${parts[2]}`;
+      return id;
+    }
 
-      while (attempts < maxAttempts) {
-        attempts++;
-
-        // 1. Eigenes Element aktualisieren (optional, wenn originalId vorhanden)
-        if (originalId) {
-          await supabase
-            .from('Database')
-            .update(updateData)
-            .eq('id', originalId);
-        }
-
-        // 2. Alle anderen Container mit derselben relation_id aktualisieren,
-        //    außer denen, deren ID mit der eigenen PIN beginnt
-        const { error: updateError } = await supabase
-          .from('Database')
-          .update(updateData)
-          .eq('relation_id', String(relationId))
-          .not('id', 'ilike', `${currentPin}%`);
-
-        if (updateError) {
-          console.error(`[Sync] Fehler beim Aktualisieren verknüpfter Container:`, updateError);
-          break;
-        }
-
-        // 3. Kontrolle: sind alle synchron?
-        const { data: check, error: checkError } = await supabase
-          .from('Database')
-          .select('id, datum, typ, bereich, beschreibung, status')
-          .eq('relation_id', String(relationId));
-
-        if (checkError) {
-          console.error(`[Sync] Fehler bei Kontrollabfrage:`, checkError);
-          break;
-        }
-
-        const allSynced = check.every((row) =>
-          Object.entries(updateData).every(([key, value]) => row[key] === value)
-        );
-
-        const ids = check.map((r) => r.id).join(', ');
-        alert(`Synchronisiert (Versuch ${attempts}): ${ids}`);
-
-        if (allSynced) {
-          console.log(`[Sync] Alle Container mit relation_id ${relationId} synchronisiert.`);
-          break;
-        }
-
-        await new Promise((r) => setTimeout(r, 300));
-      }
+    async function updateContainerAndReverse(id, updateData) {
+      const reversed = reverseId(id);
+      const { error } = await supabase
+        .from('Database')
+        .update(updateData)
+        .or(`id.eq.${id},id.eq.${reversed}`);
+      if (error) console.error('[Update] Fehler beim Aktualisieren:', error);
     }
     function createCard(item, roleParam){
       const role = roleParam || (localStorage.getItem('role') || 'user').toLowerCase();
@@ -750,21 +709,7 @@
       withdrawBtn.addEventListener('click', async (e) => {
         e.stopPropagation();
         if (confirm('Diesen Eintrag wirklich löschen?')) {
-          const { data: relData } = await supabase
-            .from('Database')
-            .select('relation_id')
-            .eq('id', item.id)
-            .single();
-
-          if (relData && relData.relation_id) {
-            await syncUpdateByRelation(relData.relation_id, { status: 'deleted' });
-          } else {
-            await supabase
-              .from('Database')
-              .update({ status: 'deleted' })
-              .eq('id', item.id);
-          }
-
+          await updateContainerAndReverse(item.id, { status: 'deleted' });
           const pin = localStorage.getItem('id');
           if (pin) loadCards(pin);
         }
@@ -776,24 +721,7 @@
     }
 
     async function updateStatus(id, newStatus) {
-      // relation_id des Containers holen
-      const { data: relData } = await supabase
-        .from('Database')
-        .select('relation_id')
-        .eq('id', id)
-        .single();
-
-      if (relData && relData.relation_id) {
-        // Alle Container mit gleicher relation_id aktualisieren
-        await syncUpdateByRelation(relData.relation_id, { status: newStatus });
-      } else {
-        // Fallback: nur diesen Container aktualisieren
-        await supabase
-          .from('Database')
-          .update({ status: newStatus })
-          .eq('id', id);
-      }
-
+      await updateContainerAndReverse(id, { status: newStatus });
       const pin = localStorage.getItem('id');
       if (pin) loadCards(pin);
     }
@@ -818,11 +746,10 @@
 
       let data, error;
       try {
-        const prefix = pin.slice(0, 4);
         const res = await supabase
           .from('Database')
           .select('*')
-          .ilike('id', `${prefix}%`)
+          .ilike('id', `%${localStorage.getItem('id')}%`)
           .eq('status', 'approved');
         data = res.data;
         error = res.error;
@@ -878,68 +805,27 @@
     async function monitorPendingStatus() {
       if (_bellStatusInterval) clearInterval(_bellStatusInterval);
 
-      let _bellFirstRun = true;
-
       async function checkPendingStatus() {
         const pin = localStorage.getItem('id');
-        if (!pin) {
-          console.log("[BellCheck] Kein PIN gefunden, Glockenprüfung übersprungen.");
-          return;
-        }
-        console.log(`[BellCheck] Überprüfung gestartet für PIN: ${pin}`);
+        if (!pin) return;
         const { data, error } = await supabase
           .from('Database')
           .select('id')
-          .ilike('id', `${pin}_%`)
+          .ilike('id', `%${pin}%`)
           .eq('status', 'pending');
-        console.log(`[BellCheck] Gefundene Pending-Elemente: ${data ? data.length : 0}`);
 
-        const notificationsCard = document.getElementById('notificationsCard');
-        if (!notificationsCard) {
-          console.log("[BellCheck] notificationsCard nicht gefunden.");
-          return;
-        }
-        const bellIcon = notificationsCard.querySelector('i[data-feather="bell"], svg.feather-bell');
-        if (!bellIcon) {
-          console.log("[BellCheck] Bell-Icon nicht gefunden.");
-          return;
-        }
-
-        if (data && data.length > 0) {
-          console.log("[BellCheck] Glocke morphs zu grünem Häkchen.");
-          // Temporarily morph to a green checkmark with fade animation
-          const bellParent = bellIcon.parentElement;
-          if (bellParent) {
-            bellParent.style.transition = 'opacity 0.4s ease';
-            bellParent.style.opacity = '0';
-            setTimeout(() => {
-              bellParent.innerHTML = feather.icons['check'].toSvg({ width: 28, height: 28, color: '#16a34a' });
-              bellParent.style.opacity = '1';
-              setTimeout(() => {
-                bellParent.style.opacity = '0';
-                setTimeout(() => {
-                  bellParent.innerHTML = feather.icons['bell'].toSvg({ width: 28, height: 28, color: '#000' });
-                  bellParent.style.opacity = '1';
-                  const newBell = bellParent.querySelector('svg');
-                  if (newBell) {
-                    newBell.classList.add('bell-shake');
-                    setTimeout(() => newBell.classList.remove('bell-shake'), 1000);
-                  }
-                }, 400);
-              }, 800);
-            }, 400);
+        const bellIcon = document.querySelector('#notificationsCard i[data-feather="bell"], #notificationsCard svg.feather-bell');
+        if (bellIcon) {
+          if (data && data.length > 0) {
+            bellIcon.style.color = '#16a34a'; // grün
+          } else {
+            bellIcon.style.color = '#000'; // normal
           }
-        } else {
-          console.log("[BellCheck] Keine Pending-Elemente gefunden. Glocke bleibt still.");
         }
       }
 
-      // Initial und alle 10 Sekunden prüfen
       await checkPendingStatus();
-      _bellStatusInterval = setInterval(() => {
-        console.log("[BellCheck] Starte Glockenprüfung...");
-        checkPendingStatus();
-      }, 10000);
+      _bellStatusInterval = setInterval(checkPendingStatus, 10000);
     }
     // Show Benachrichtigungen (pending) cards in futureList and update heading
     async function showNotifications(pending) {
@@ -1199,63 +1085,33 @@
 
         const btn = document.getElementById('saveNew');
         if(btn.dataset.editId){
-          await supabase.from('Database').update({
+          await updateContainerAndReverse(btn.dataset.editId, {
             datum,
             typ,
             bereich,
             beschreibung,
             status: 'pending'
-          }).eq('id', btn.dataset.editId);
-          // NEU: Nach Update relation_id holen und alle zugehörigen Einträge aktualisieren
-          const { data: relData } = await supabase.from('Database').select('relation_id').eq('id', btn.dataset.editId).single();
-          if (relData && relData.relation_id) {
-            await syncUpdateByRelation(relData.relation_id, { datum, typ, bereich, beschreibung, status: 'pending' });
-          }
+          });
         }else{
-          const creatorPin = localStorage.getItem('id');
-          let creatorName = 'Unbekannt';
-          const { data: cData } = await supabase.from('Database').select('UserName').eq('id', creatorPin).single();
-          if (cData && cData.UserName) creatorName = cData.UserName;
+          const currentPin = localStorage.getItem('id');
+          const selectedUserPin = userId;
+          let currentUserName = 'Unbekannt';
+          const { data: cData } = await supabase.from('Database').select('UserName').eq('id', currentPin).single();
+          if (cData && cData.UserName) currentUserName = cData.UserName;
+          const randomPart = crypto.randomUUID().replace(/-/g, '').slice(0, 20);
+          const newId = `${currentPin}_${selectedUserPin}_${randomPart}`;
 
-          // Generiere gemeinsame relation_id
-          const relationId = String(Math.floor(100000 + Math.random() * 900000));
-
-          // Generiere zufälligen Suffix für IDs
-          const randomPart = Math.floor(100000 + Math.random() * 900000);
-
-          // IDs für beide User erzeugen
-          const creatorId = `${creatorPin}_${randomPart}`;
-          const userIdWithSuffix = `${userId}_${randomPart}`;
-
-          // Zwei Einträge erzeugen (beide User sollen den Container sehen)
-          const newEntries = [
+          await supabase.from('Database').insert([
             {
-              id: creatorId,
+              id: newId,
+              UserName: currentUserName,
               datum,
               typ,
               bereich,
               beschreibung,
-              connected_user_A: creatorPin,
-              connected_user_B: userId,
-              UserName: creatorName,
-              relation_id: relationId,
-              status: 'pending'
-            },
-            {
-              id: userIdWithSuffix,
-              datum,
-              typ,
-              bereich,
-              beschreibung,
-              connected_user_A: creatorPin,
-              connected_user_B: userId,
-              UserName: creatorName,
-              relation_id: relationId,
-              status: 'pending'
+              status: 'pending',
             }
-          ];
-
-          await supabase.from('Database').insert(newEntries);
+          ]);
         }
         close();
         const pin=localStorage.getItem('id'); if(pin) loadCards(pin);
@@ -1914,11 +1770,10 @@
             .select('*')
             .eq('status', 'declined'));
         } else {
-          // Neue Supabase-Query für Pending Cards (nicht Admin)
           ({ data, error } = await supabase
             .from('Database')
             .select('*')
-            .or(`id.eq.${pin},id.ilike.${pin}_%`)
+            .ilike('id', `%${localStorage.getItem('id')}%`)
             .eq('status', 'pending'));
         }
       } catch (err) { error = err; }
