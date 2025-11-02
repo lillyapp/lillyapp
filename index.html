@@ -1786,7 +1786,7 @@
           ({ data, error } = await supabase
             .from('Database')
             .select('*')
-            .eq('status', 'declined'));
+            .or('status.eq.pending,status.eq.declined'));
         } else {
           ({ data, error } = await supabase
             .from('Database')
