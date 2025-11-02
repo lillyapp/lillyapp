@@ -936,6 +936,23 @@
       row.appendChild(midWrap);
       row.appendChild(statusEl);
 
+      // Add delete button for "In Zukunft" (approved) items
+      if (item.status === 'approved') {
+        const deleteBtn = document.createElement('button');
+        deleteBtn.innerHTML = feather.icons['trash-2'].toSvg({ width: 20, height: 20 });
+        deleteBtn.style.cssText = 'background:none;border:none;cursor:pointer;color:var(--danger);';
+        deleteBtn.title = 'Löschen';
+        deleteBtn.addEventListener('click', async (e) => {
+          e.stopPropagation();
+          if (confirm('Möchtest du diesen Eintrag wirklich löschen?')) {
+            await updateContainerAndReverse(item.id, { status: 'deleted' });
+            const pin = localStorage.getItem('id');
+            if (pin) loadCards(pin);
+          }
+        });
+        row.appendChild(deleteBtn);
+      }
+
       // Add action buttons if in "Erinnerungen" (pending) section
       if (item.status === 'pending') {
         const actionWrap = document.createElement('div');
