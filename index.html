@@ -1268,10 +1268,12 @@
     // SkillMeter JS
     document.addEventListener('DOMContentLoaded', async () => {
       const bars = document.querySelectorAll('#skillMeter .skill-bar .fill');
+      // Set transition property for animation
       bars.forEach(bar => {
         bar.style.transition = 'width 1s ease-out';
         bar.style.width = '0%';
       });
+
       // Farben aus Supabase holen & in localStorage speichern
       let userColors = {};
       const userId = localStorage.getItem('id');
@@ -1298,21 +1300,42 @@
           };
         }
       } else {
-        userColors = {
-          fach: '#3A6FF8',
-          pers: '#16a34a',
-          sozial: '#f59e0b'
-        };
+        // Try localStorage fallback
+        try {
+          const stored = JSON.parse(localStorage.getItem('userColors') || '{}');
+          userColors = {
+            fach: stored.fach || '#3A6FF8',
+            pers: stored.pers || '#16a34a',
+            sozial: stored.sozial || '#f59e0b'
+          };
+        } catch {
+          userColors = {
+            fach: '#3A6FF8',
+            pers: '#16a34a',
+            sozial: '#f59e0b'
+          };
+        }
       }
+
+      // Apply user colors to the bars immediately before any animation
       bars.forEach(bar => {
-        const level = Math.floor(Math.random() * 4) + 1;
-        const width = level * 25;
-        bar.style.width = width + '%';
-        if (bar.dataset.skill === 'fach') bar.style.background = userColors.fach || '#3A6FF8';
-        if (bar.dataset.skill === 'pers') bar.style.background = userColors.pers || '#16a34a';
-        if (bar.dataset.skill === 'sozial') bar.style.background = userColors.sozial || '#f59e0b';
+        // Determine skill type by parent .skill-bar's data-skill
+        const skillBar = bar.parentElement && bar.parentElement.dataset ? bar.parentElement.dataset.skill : null;
+        if (skillBar === 'fach') bar.style.background = userColors.fach || '#3A6FF8';
+        if (skillBar === 'pers') bar.style.background = userColors.pers || '#16a34a';
+        if (skillBar === 'sozial') bar.style.background = userColors.sozial || '#f59e0b';
       });
 
+      // Animate bars from 0% to calculated width after a short delay
+      setTimeout(() => {
+        bars.forEach(bar => {
+          const level = Math.floor(Math.random() * 4) + 1;
+          const width = level * 25;
+          bar.style.width = width + '%';
+        });
+      }, 80);
+
+      // --- Skill Detail logic ---
       const skillDetail = document.getElementById('skillDetail');
       const skillTitle = document.getElementById('skillTitle');
       const skillText = document.getElementById('skillText');
