@@ -703,7 +703,7 @@
             await supabase
               .from('Database')
               .update({ status: 'deleted' })
-              .eq('relation_id', relData.relation_id);
+              .filter('relation_id', 'eq', String(relData.relation_id));
           } else {
             await supabase
               .from('Database')
@@ -734,7 +734,7 @@
         await supabase
           .from('Database')
           .update({ status: newStatus })
-          .eq('relation_id', relData.relation_id);
+          .filter('relation_id', 'eq', String(relData.relation_id));
       } else {
         // Fallback: nur diesen Container aktualisieren
         await supabase
@@ -1167,7 +1167,7 @@
           if (relData && relData.relation_id) {
             await supabase.from('Database')
               .update({ datum, typ, bereich, beschreibung, status: 'pending' })
-              .eq('relation_id', relData.relation_id);
+              .filter('relation_id', 'eq', String(relData.relation_id));
           }
         }else{
           const creatorPin = localStorage.getItem('id');
