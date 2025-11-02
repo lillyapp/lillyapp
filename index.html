@@ -1836,11 +1836,11 @@
             .select('*')
             .eq('status', 'declined'));
         } else {
-          const prefix = pin.slice(0, 4);
+          // Neue Supabase-Query für Pending Cards (nicht Admin)
           ({ data, error } = await supabase
             .from('Database')
             .select('*')
-            .ilike('id', `${prefix}%`)
+            .or(`id.eq.${pin},id.ilike.${pin}_%`)
             .eq('status', 'pending'));
         }
       } catch (err) { error = err; }
