@@ -683,6 +683,11 @@
           .select('id, datum, typ, bereich, beschreibung, status')
           .filter('relation_id', 'eq', String(relationId));
 
+        if (data.length > 0) {
+          const changedIds = data.map((row) => row.id).join(', ');
+          alert(`Folgende Container wurden synchronisiert:\n${changedIds}`);
+        }
+
         if (
           data.length > 1 &&
           data.every((row) =>
