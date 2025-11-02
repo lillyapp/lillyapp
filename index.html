@@ -690,11 +690,29 @@
       // Actions
       acceptBtn.addEventListener('click', (e)=>{ e.stopPropagation(); updateStatus(item.id,'approved'); });
       declineBtn.addEventListener('click', (e)=>{ e.stopPropagation(); updateStatus(item.id,'pending');  });
-      withdrawBtn.addEventListener('click', async (e)=>{
+      withdrawBtn.addEventListener('click', async (e) => {
         e.stopPropagation();
-        if(confirm('Diesen Eintrag wirklich löschen?')){
-          await supabase.from('Database').update({status:'deleted'}).eq('id', item.id);
-          const pin = localStorage.getItem('id'); if(pin) loadCards(pin);
+        if (confirm('Diesen Eintrag wirklich löschen?')) {
+          const { data: relData } = await supabase
+            .from('Database')
+            .select('relation_id')
+            .eq('id', item.id)
+            .single();
+
+          if (relData && relData.relation_id) {
+            await supabase
+              .from('Database')
+              .update({ status: 'deleted' })
+              .eq('relation_id', relData.relation_id);
+          } else {
+            await supabase
+              .from('Database')
+              .update({ status: 'deleted' })
+              .eq('id', item.id);
+          }
+
+          const pin = localStorage.getItem('id');
+          if (pin) loadCards(pin);
         }
       });
       editBtn.addEventListener('click', (e)=>{ e.stopPropagation(); openAdminForm(item); });
@@ -703,12 +721,30 @@
       return frag;
     }
 
-    async function updateStatus(id,newStatus){
-      const { error } = await supabase.from('Database').update({status:newStatus}).eq('id', id);
-      if(!error){
-        const pin = localStorage.getItem('id');
-        if(pin) loadCards(pin);
+    async function updateStatus(id, newStatus) {
+      // relation_id des Containers holen
+      const { data: relData } = await supabase
+        .from('Database')
+        .select('relation_id')
+        .eq('id', id)
+        .single();
+
+      if (relData && relData.relation_id) {
+        // Alle Container mit gleicher relation_id aktualisieren
+        await supabase
+          .from('Database')
+          .update({ status: newStatus })
+          .eq('relation_id', relData.relation_id);
+      } else {
+        // Fallback: nur diesen Container aktualisieren
+        await supabase
+          .from('Database')
+          .update({ status: newStatus })
+          .eq('id', id);
       }
+
+      const pin = localStorage.getItem('id');
+      if (pin) loadCards(pin);
     }
 
     // ---------- Daten laden ----------
