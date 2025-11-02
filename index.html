@@ -730,15 +730,16 @@
       noPendingMsg.classList.add('hidden');
 
       let data, error;
-      try{
-        if((localStorage.getItem('role')||'user') === 'admin'){
-          const res = await supabase.from('Database').select('*').eq('connected_user_A', pin);
-          data = res.data; error = res.error;
-        }else{
-          const res = await supabase.from('Database').select('*').ilike('id', `${pin}_%`);
-          data = res.data; error = res.error;
-        }
-      }catch(err){ error = err; }
+      try {
+        const prefix = pin.slice(0, 4);
+        const res = await supabase
+          .from('Database')
+          .select('*')
+          .ilike('id', `${prefix}%`)
+          .eq('status', 'approved');
+        data = res.data;
+        error = res.error;
+      } catch (err) { error = err; }
 
       if(error){
         if (futureList) futureList.innerHTML = `<p style="color:#dc2626">Fehler beim Laden: ${error.message || error}</p>`;
@@ -1125,24 +1126,58 @@
             beschreibung,
             status: 'pending'
           }).eq('id', btn.dataset.editId);
+          // NEU: Nach Update relation_id holen und alle zugehörigen Einträge aktualisieren
+          const { data: relData } = await supabase.from('Database').select('relation_id').eq('id', btn.dataset.editId).single();
+          if (relData && relData.relation_id) {
+            await supabase.from('Database')
+              .update({ datum, typ, bereich, beschreibung, status: 'pending' })
+              .eq('relation_id', relData.relation_id);
+          }
         }else{
           const creatorPin = localStorage.getItem('id');
           let creatorName = 'Unbekannt';
-          const {data:cData} = await supabase.from('Database').select('UserName').eq('id', creatorPin).single();
-          if(cData && cData.UserName) creatorName = cData.UserName;
-          const randomPart = Math.floor(100000 + Math.random()*900000);
-          const id = `${userId}_${randomPart}`;
-          await supabase.from('Database').insert([{
-            id,
-            datum,
-            typ,
-            bereich,
-            beschreibung,
-            connected_user_A: creatorPin,
-            connected_user_B: userId,
-            UserName: creatorName,
-            status: 'pending'
-          }]);
+          const { data: cData } = await supabase.from('Database').select('UserName').eq('id', creatorPin).single();
+          if (cData && cData.UserName) creatorName = cData.UserName;
+
+          // Generiere gemeinsame relation_id
+          const relationId = Math.floor(100000 + Math.random() * 900000).toString();
+
+          // Generiere zufälligen Suffix für IDs
+          const randomPart = Math.floor(100000 + Math.random() * 900000);
+
+          // IDs für beide User erzeugen
+          const creatorId = `${creatorPin}_${randomPart}`;
+          const userIdWithSuffix = `${userId}_${randomPart}`;
+
+          // Zwei Einträge erzeugen (beide User sollen den Container sehen)
+          const newEntries = [
+            {
+              id: creatorId,
+              datum,
+              typ,
+              bereich,
+              beschreibung,
+              connected_user_A: creatorPin,
+              connected_user_B: userId,
+              UserName: creatorName,
+              relation_id: relationId,
+              status: 'pending'
+            },
+            {
+              id: userIdWithSuffix,
+              datum,
+              typ,
+              bereich,
+              beschreibung,
+              connected_user_A: creatorPin,
+              connected_user_B: userId,
+              UserName: creatorName,
+              relation_id: relationId,
+              status: 'pending'
+            }
+          ];
+
+          await supabase.from('Database').insert(newEntries);
         }
         close();
         const pin=localStorage.getItem('id'); if(pin) loadCards(pin);
@@ -1801,22 +1836,12 @@
             .select('*')
             .eq('status', 'declined'));
         } else {
+          const prefix = pin.slice(0, 4);
           ({ data, error } = await supabase
             .from('Database')
             .select('*')
-            .ilike('id', `${pin}_%`)
+            .ilike('id', `${prefix}%`)
             .eq('status', 'pending'));
-
-          if (!data || data.length === 0) {
-            const res2 = await supabase
-              .from('Database')
-              .select('*')
-              .eq('connected_user_A', pin)
-              .eq('status', 'pending');
-            if (res2.data && res2.data.length > 0) {
-              data = res2.data;
-            }
-          }
         }
       } catch (err) { error = err; }
 
