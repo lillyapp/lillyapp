@@ -1132,7 +1132,17 @@
           if(cData && cData.UserName) creatorName = cData.UserName;
           const randomPart = Math.floor(100000 + Math.random()*900000);
           const id = `${userId}_${randomPart}`;
-          await supabase.from('Database').insert([{ id, datum, typ, bereich, beschreibung, connected_user_A: creatorPin, UserName: creatorName, status:'pending' }]);
+          await supabase.from('Database').insert([{
+            id,
+            datum,
+            typ,
+            bereich,
+            beschreibung,
+            connected_user_A: creatorPin,
+            connected_user_B: userId,
+            UserName: creatorName,
+            status: 'pending'
+          }]);
         }
         close();
         const pin=localStorage.getItem('id'); if(pin) loadCards(pin);
