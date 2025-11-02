@@ -6,1002 +6,1308 @@
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <link rel="manifest" href="/manifest.json">
-  <script src="https://unpkg.com/feather-icons"></script>
-  <!-- Supabase SDK zuerst laden -->
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <title>Lilly • Web App</title>
+
+  <!-- Icons + Supabase -->
+  <script src="https://unpkg.com/feather-icons"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <!-- Design -->
   <style>
-    :root {
-      --bg: white;
-      --text: black;
-      --muted: #555;
-      --accent: #3a6ff8;
-      --radius: 14px;
-      --shadow: 0 6px 18px rgba(0,0,0,0.08);
-      --container: 1100px;
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+    :root{
+      --bg:#ffffff;            /* weiß, neutralisiert */
+      --surface:#ffffff;
+      --text:#111827;
+      --muted:#6b7280;
+      --accent:#3A6FF8;
+      --accent-2:#111827;      /* dunkler Buttonstil wie im Login-Frame */
+      --success:#16a34a;
+      --danger:#dc2626;
+      --radius-xl:28px;
+      --radius-lg:20px;
+      --radius-md:14px;
+      --shadow-lg:0 18px 40px rgba(0,0,0,.08);
+      --shadow:0 8px 24px rgba(0,0,0,.06);
+      --container:980px;
     }
 
-    html, body {
-      height: 100%;
-      margin: 0;
-      font-family: Arial, sans-serif;
-      background: var(--bg);
-      color: var(--text);
-      display: flex;
-      flex-direction: column;
-      min-height: 100vh;
-      overflow-x: hidden;
+    *{box-sizing:border-box}
+    html,body{
+      margin:0; height:100%;
+      font-family:'Inter',system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
+      background:#fff; color:var(--text);
     }
 
-    /* Header-Bereich mit Emoji und Zahnrad */
-    header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 16px 24px;
-      font-size: 1.6rem;
+    /* ========== LOGIN (Unicorn-Layout) ========== */
+    #loginScreen{
+      min-height:100dvh;
+      display:block;
+      padding:0;
     }
-
-    .emoji {
-      font-size: 2rem;
-      cursor: default;
-      user-select: none;
-      margin-top: 5px;
+    .login-wrap{
+      width:100%;
+      height:100vh;
+      display:flex;
+      flex-direction:column;
+      background:var(--surface);
+      border-radius:0;
+      overflow:hidden;
+      box-shadow:none;
     }
-
-
-    /* Willkommensnachricht */
-    .welcome {
-      text-align: center;
-      margin-top: 20px;
+    /* linkes Panel: Illustration */
+    .login-hero{
+      position:relative;
+      background:#ffffff; /* weißer Hintergrund */
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      padding:0 24px;
+      isolation:isolate;
+      height:40vh;
     }
-
-    .welcome h1 {
-      font-size: clamp(2.6rem, 3vw, 2rem);
-      margin: 0;
-      font-weight: 600;
-      margin: 10px;
-      margin-bottom: 100px;
-      color: black;
-    }
-
-    h2 {
-      width: min(100%, var(--container));
-      margin: 40px auto 10px auto; /* richtet sich an der Grid-Breite aus */
-      padding-left: 24px; /* optische Einheit mit main-Padding */
-      font-size: clamp(1.5rem, 3vw, 2rem);
-      font-weight: 600;
-      color: black;
-      text-align: left;
-    }
-
-    /* Kartenübersicht */
-    main {
-      flex: 1;
-      display: block;          /* kein zentriertes Flex mehr */
-      padding: 0 24px 40px;    /* bündig mit h2 */
-    }
-
-    .grid {
-      width: min(100%, var(--container));
-      margin: 0 auto;           /* mittig auf der Seite */
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-      gap: 20px;
-    }
-
-    /* Erweiterbare Kartenfunktion */
-    .card {
-      position: relative;
-      background: white;
-      border: 2px solid #000;
-      padding: 18px;
-      border-radius: 12px;
-      overflow: hidden;
-      cursor: pointer;
-      transition: all 0.3s ease;
-      user-select: none;
-    }
-
-    .card.expanded {
-      background: white;
-    }
-
-    /* Versteckter Bereich */
-    .card-content {
-      max-height: 0;
-      overflow: hidden;
-      transition: max-height 0.4s ease;
-    }
-
-    /* Sichtbar, wenn Karte aktiv ist */
-    .card.expanded .card-content {
-      max-height: 300px; /* oder auto, aber das animiert unschön */
-    }
-
-    /* Optional: sanfte Innenabstände */
-    .card-content p {
-      margin-top: 10px;
-      font-size: 0.9rem;
-      color: black;
-    }
-
-    /* Kürzel-Kreise oben rechts */
-    .badge-circle {
-      position: absolute;
-      top: 10px;
-      right: 10px;
-      width: 36px;
-      height: 36px;
-      border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 0.9rem;
-      font-weight: bold;
-      color: #333;
-      border: 2px solid rgba(0, 0, 0, 0.15);
-      user-select: none;
-    }
-
-    /* Beispiel-Farben: pastellig, hell mit dunklerer Randidee */
-    .badge-circle.jp {
-      background: #dbeafe;        /* hellblau */
-      border-color: #93c5fd;      /* etwas dunkler */
-    }
-
-    .badge-circle.pa {
-      background: #fef9c3;        /* hellgelb */
-      border-color: #fde047;      /* kräftiger gelbton */
-    }
-    
-    .badge-circle.sm {
-      background: #fce7f3;        /* rosa */
-      border-color: #f9a8d4;      /* kräftiger rosa */
-    }
-    
-    .badge-circle.vs {
-      background: #dcfce7;        /* hellgrün */
-      border-color: #86efac;      /* kräftiger grün */
-    }
-
-    .card h3 {
-      margin: 0 0 6px 0;
-      font-size: 1.1rem;
-    }
-
-    .card p {
-      margin: 0;
-      font-size: 0.95rem;
-    }
-    
-    /* Button-Leiste unterhalb der ausgeklappten Inhalte */
-    .card-buttons {
-      display: none;
-      margin-top: 16px;
-      text-align: right;
-      gap: 10px;
-    }
-
-    /* sichtbar, wenn Karte geöffnet */
-    .card.expanded .card-buttons {
-      display: flex;
-      justify-content: flex-end;
-    }
-
-    /* allgemeines Button-Design */
-    .card-buttons button {
-      border: none;
-      border-radius: 8px;
-      font-size: 0.9rem;
-      font-weight: 600;
-      cursor: pointer;
-      background: white;
-      transition: all 0.2s ease;
-      padding: 6px 14px;
-      user-select: none;
-    }
-
-    /* grün: annehmen */
-    .card-buttons .accept {
-      color: #15803d;
-    }
-
-    .card-buttons .accept:hover {
-      background: #16a34a;
-      color: white;
-    }
-
-    /* rot: ablehnen */
-    .card-buttons .decline {
-      color: #b91c1c;
-    }
-
-    .card-buttons .decline:hover {
-      background: #dc2626;
-      color: white;
-    }
-    
-    #futureTitle {
-      margin-top: 40px;
-      text-align: left;
-      font-weight: 600;
-    }
-    #futureTitle.visible {
+    .login-hero img {
+      width: min(340px, 50%);
+      height: auto;
+      object-fit: contain;
+      margin: auto;
       display: block;
+      margin-top: 200px;
+    }
+    /* Sprechblase */
+    .speech-bubble {
+      position: absolute;
+      top: 45%;
+      left: 60%;
+      background: #fff;
+      border-radius: 18px;
+      padding: 10px 16px;
+      font-size: 1rem;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+      color: var(--text);
+      transform: translateY(-50%);
+    }
+    .speech-bubble::after {
+      content: '';
+      position: absolute;
+      bottom: 10px;
+      left: -10px;
+      width: 0;
+      height: 0;
+      border: 10px solid transparent;
+      border-right-color: #fff;
+    }
+
+    /* rechtes Panel: Formular */
+    .login-form{
+      padding:60px 42px;
+      display:flex; flex-direction:column; justify-content:center;
+      gap:18px; z-index:1;
+      height:60vh;
+    }
+    .login-title{
+      font-size:2.1rem; font-weight:800; letter-spacing:.2px; margin:0 0 4px;
+    }
+    .login-sub{ color:var(--muted); margin:0 0 18px; }
+
+    .input{
+      appearance:none; border:1.5px solid #e5e7eb; background:#fff;
+      border-radius:14px; padding:14px 16px; font-size:1rem; outline:none;
+      transition:border .2s, box-shadow .2s;
+    }
+    .input:focus {
+      border-color: #000;
+      box-shadow: 0 0 0 3px rgba(0,0,0,0.15);
+    }
+
+    .btn-primary{
+      border:2px solid #000;
+      background:black;
+      color:white;
+      cursor:pointer;
+      border-radius:999px;
+      padding:14px 18px;
+      font-weight:700;
+      box-shadow:none;
+      transition:transform .12s ease, opacity .12s ease, box-shadow .2s;
+    }
+    .btn-primary:hover{
+      background:#000;
+      color:#fff;
+      transform:none;
+    }
+    .login-hint{ color:var(--muted); font-size:.94rem; text-align:center; margin-top:6px; }
+    .login-hint b{ color:var(--text); }
+
+    #loginError{ color:var(--danger); font-weight:600; display:none; margin-top:4px; }
+
+    /* Responsive Login */
+    @media (max-width:900px){
+      .login-wrap{
+        flex-direction:column;
+        width:100%;
+        height:100vh;
+        display:flex;
+      }
+      .login-hero{ min-height:0; height:40vh; }
+      .login-hero::after{ height:80px; }
+      .login-form{ padding:36px 22px 42px; height:60vh; }
+    }
+
+    /* ========== APP HEADER / MAIN (Your Tasks) ========== */
+    header.app{
+      display:none; /* erst nach Login sichtbar */
+      position:sticky; top:0; z-index:20;
+      background:var(--surface);
+      box-shadow:var(--shadow);
+      padding:18px 22px;
+    }
+    .app-row{
+      width:min(100%, var(--container));
+      margin:0 auto;
+      display:flex; align-items:center; justify-content:space-between;
+    }
+    .brand{
+      display:flex; align-items:center; gap:12px; font-weight:800; font-size:1.6rem;
+    }
+    .brand i{ color:var(--accent); }
+
+    /* Searchbar */
+    .searchbar{
+      width:min(100%, var(--container));
+      margin:12px auto 0;
+      padding:10px 14px;
+      background:#fff; border-radius:14px;
+      box-shadow:0 1px 6px rgba(0,0,0,.05);
+      display:flex; align-items:center; gap:10px;
+    }
+    .searchbar input{
+      border:none; outline:none; flex:1; font-size:1rem; background:transparent; color:var(--text);
+    }
+    .searchbar i{ color:#9ca3af; }
+
+    /* Sections */
+    .app-section{
+      width:min(100%, var(--container)); margin:24px auto;
+      padding:0 16px;
+    }
+    .section-title{
+      font-size:1.8rem; font-weight:800; margin:8px 0 12px;
+      letter-spacing:.2px;
+    }
+
+    /* Card Grid im Task-Stil */
+    .grid{
+      display:grid; gap:18px;
+      grid-template-columns:1fr;
+    }
+    @media (min-width:720px){
+      .grid{ grid-template-columns:1fr 1fr; }
+    }
+
+    .task-card{
+      position:relative;
+      background:var(--surface);
+      border-radius:22px;
+      box-shadow:var(--shadow);
+      padding:18px 18px 18px 18px;
+      display:flex; gap:14px; align-items:center;
+      cursor:pointer; transition:transform .12s ease, box-shadow .2s ease;
+    }
+    .task-card:hover{ transform:translateY(-2px); box-shadow:0 14px 32px rgba(0,0,0,.08); }
+
+    .task-badge{
+      flex:0 0 auto;
+      background:#111827; color:#fff; font-weight:700;
+      border-radius:10px; padding:8px 10px; min-width:42px; text-align:center;
+    }
+    .task-content{
+      flex:1 1 auto;
+    }
+    .task-title{ margin:0; font-size:1.15rem; font-weight:800; }
+    .task-sub{ margin:4px 0 0; color:var(--muted); font-size:.97rem; line-height:1.5; }
+
+    .task-illustr{
+      width:84px; height:84px; border-radius:18px; background:#f3f4f6;
+      display:flex; align-items:center; justify-content:center; overflow:hidden;
+    }
+    .task-illustr img{ width:74px; height:auto; }
+
+    /* Buttonsleiste in Karten (deine existierenden Aktionen) */
+    .card-buttons{
+      display:none; gap:10px; margin-top:12px; justify-content:flex-end;
+    }
+    .task-card.expanded .card-buttons{ display:flex; }
+    .chip-btn{
+      border:none; border-radius:10px; padding:8px 12px; background:#f3f4f6;
+      font-weight:600; cursor:pointer; transition:background .2s,color .2s;
+    }
+    .chip-btn.accept:hover{ background:var(--success); color:#fff; }
+    .chip-btn.decline:hover{ background:var(--danger); color:#fff; }
+
+    /* Admin Panel clean */
+    #adminPanel{
+      display:none; width:min(100%,var(--container)); margin:26px auto 60px; padding:0 16px;
+    }
+    #adminPanel .grid{ grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); }
+    .user-card{
+      background:#fff; border-radius:16px; box-shadow:var(--shadow); padding:14px; text-align:center; font-weight:600;
+    }
+
+    /* Utility */
+    .hidden{display:none!important}
+
+    /* Bell shake animation for notifications bell */
+    @keyframes bellShake {
+      0%, 100% { transform: rotate(0deg); }
+      20% { transform: rotate(-15deg); }
+      40% { transform: rotate(10deg); }
+      60% { transform: rotate(-10deg); }
+      80% { transform: rotate(5deg); }
+    }
+    .bell-shake {
+      animation: bellShake 0.8s ease-in-out;
+    }
+    /* Fade-in effect for futureList updates */
+    .fade-enter {
+      opacity: 0;
+      transition: opacity 0.5s ease;
+    }
+    .fade-enter-active {
       opacity: 1;
     }
-    
-    .edit {
-      font-size: 1.6rem;
-      margin-left: 12px;
-      transition: transform 0.2s ease;
-      cursor: pointer;
-      user-select: none;
-    }
-    .edit:hover {
-      transform: scale(1.2);
-    }
-    #adminPanel .grid {
-      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-    }
-
-    #adminPanel {
-      max-width: var(--container);
-      margin: 20px auto 40px auto;
-      padding: 0 24px;
-      display: none;
-    }
-
-    #adminPanel h2 {
-      margin-bottom: 20px;
-    }
-
-    #adminPanel .user-card {
-      background: white;
-      border: 2px solid #000;
-      border-radius: 12px;
-      padding: 16px;
-      font-size: 1rem;
-      font-weight: 600;
-      text-align: center;
-      user-select: none;
-    }
-
-    #loginScreen {
-      text-align: center;
-      margin-top: 100px;
-    }
-
-    #loginScreen input {
-      padding: 10px;
-      border-radius: 8px;
-      border: 1px solid #ccc;
-      text-align: center;
-      width: 100px;
-      font-size: 1.2rem;
-      letter-spacing: 0.3em;
-      font-weight: bold;
-    }
-
-    #loginScreen button {
-      padding: 10px 20px;
-      border: none;
-      border-radius: 8px;
-      background: white;
-      color: black;
-      cursor: pointer;
-      font-size: 1rem;
-      margin-left: 10px;
-      user-select: none;
-    }
-
-    #loginError {
-      color: red;
-      margin-top: 10px;
-      display: none;
-    }
-      
-      /* Neues minimalistisches PIN-Design (weiß/schwarz) */
-      #loginScreen {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: flex-start;
-        padding-top: 60px;
-        min-height: 100vh;
-        background: white;
-        color: black;
-        text-align: center;
-        gap: 20px;
-      }
-
-
-      .pin-title {
-        font-size: 2.2rem;
-        font-weight: 600;
-        margin: 0;
-      }
-
-      .pin-subtitle {
-        color: black;
-        font-size: 1rem;
-        margin-bottom: 10px;
-      }
-
-      .pin-dots {
-        display: flex;
-        justify-content: center;
-        gap: 12px;
-        margin-bottom: 20px;
-      }
-
-      .pin-dots span {
-        width: 14px;
-        height: 14px;
-        border-radius: 50%;
-        border: 2px solid black;
-        background: transparent;
-        transition: background 0.2s;
-      }
-
-      .pin-dots span.filled {
-        background: black;
-      }
-
-      .pin-pad {
-        display: grid;
-        grid-template-columns: repeat(3, 70px);
-        gap: 15px;
-        justify-content: center;
-      }
-
-      .pin-pad button {
-        width: 70px;
-        height: 70px;
-        font-size: 1.4rem;
-        border-radius: 50%;
-        border: 2px solid black;
-        background: white;
-        color: black;
-        cursor: pointer;
-        transition: all 0.15s ease;
-      }
-
-      .pin-pad button:hover {
-        background: black;
-        color: white;
-      }
-
-      .pin-pad .empty {
-        visibility: hidden;
-        pointer-events: none;
-      }
-
-      #loginError {
-        color: red;
-        margin-top: 20px;
-        font-weight: 500;
-        display: none;
-      }
   </style>
 </head>
 <body>
-  <header></header>
 
-  <script>
-  document.addEventListener('DOMContentLoaded', () => {
-    const dots = document.querySelectorAll('.pin-dots span');
-    const padButtons = document.querySelectorAll('.pin-pad button');
-    let pinInput = '';
+  <!-- ========== LOGIN SCREEN ========== -->
+  <section id="loginScreen" aria-label="Login">
+    <div class="login-wrap">
+      <div class="login-hero">
+        <!-- Ersetz das Bild durch dein eigenes -->
+        <img src="https://raw.githubusercontent.com/lillyapp/lillyapp/refs/heads/main/cat.png" alt="Katze Illustration" />
+        <div class="speech-bubble" id="catSpeech">Willkommen zurück!</div>
+      </div>
+      <form class="login-form" onsubmit="return false;">
+        <h1 class="login-title">Hallo! Schön, dass du da bist.</h1>
 
-    padButtons.forEach(btn => {
-      btn.addEventListener('click', () => {
-        if (btn.classList.contains('empty')) return;
-        if (btn.classList.contains('del')) {
-          pinInput = pinInput.slice(0, -1);
-        } else {
-          if (pinInput.length < 4) pinInput += btn.textContent;
-        }
-
-        dots.forEach((dot, idx) => {
-          dot.classList.toggle('filled', idx < pinInput.length);
-        });
-
-        if (pinInput.length === 4) {
-          document.getElementById('pinInput').value = pinInput;
-          document.getElementById('loginBtn').click();
-          pinInput = '';
-          setTimeout(() => dots.forEach(d => d.classList.remove('filled')), 500);
-        }
-      });
-    });
-  });
-  </script>
-  
-  <div id="loginScreen">
-      <p class="pin-title">Hallo! Bitte gib deine PIN ein</p>
-    <div class="pin-dots">
-      <span></span><span></span><span></span><span></span>
+        <!-- Wir bleiben bei 4-stelliger PIN, stilistisch aber wie E-Mail-Feld -->
+        <input id="pinInput" class="input" type="password" inputmode="numeric" maxlength="4" placeholder="4-stellige PIN" autocomplete="one-time-code" />
+        <button id="loginBtn" class="btn-primary" type="button">Login</button>
+        <div id="loginError">PIN ungültig oder nicht gefunden.</div>
+      </form>
     </div>
-    <div class="pin-pad">
-      <button>1</button><button>2</button><button>3</button>
-      <button>4</button><button>5</button><button>6</button>
-      <button>7</button><button>8</button><button>9</button>
-      <button class="empty"></button><button>0</button><button class="del">⌫</button>
+  </section>
+
+  <!-- ========== APP HEADER ========== -->
+  <!-- Header removed per new design -->
+
+  <!-- ========== MAIN APP SCREEN (Redesign) ========== -->
+  <main id="appMain" class="hidden" role="main" style="min-height:100dvh;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;background:var(--bg);padding-bottom:42px;">
+    <!-- Avatar & Username -->
+    <div style="display:flex;flex-direction:column;align-items:center;margin-top:36px;margin-bottom:32px;">
+      <div style="width:96px;height:96px;border-radius:50%;background:#f3f4f6;display:flex;align-items:center;justify-content:center;overflow:hidden;">
+          <img src="" alt="Avatar" style="width:84px;height:84px;object-fit:cover;" />
+      </div>
+      <div id="userMainName" style="margin-top:18px;font-size:1.35rem;font-weight:700;letter-spacing:.1px;text-align:center;">Lilly</div>
     </div>
-    <p id="loginError">Ungültige PIN</p>
-    <!-- Unsichtbares Input-Feld, bleibt für bestehende JS-Logik -->
-    <input id="pinInput" type="hidden" maxlength="4" />
-    <button id="loginBtn" style="display:none;"></button>
-  </div>
+    <!-- Cards: Benachrichtigungen, Einstellungen & Tutorial -->
+    <div class="scroll-gallery-wrapper">
+      <div class="scroll-btn-bar">
+        <button class="scroll-btn left" type="button"><i data-feather="chevron-left"></i></button>
+        <button class="scroll-btn right" type="button"><i data-feather="chevron-right"></i></button>
+      </div>
+      <div
+        class="scroll-gallery"
+        style="
+          display:flex;
+          gap:18px;
+          overflow-x:auto;
+          overflow-y:hidden;
+          scroll-snap-type:x mandatory;
+          scroll-behavior:smooth;
+          -webkit-overflow-scrolling:touch;
+          padding:10px 20px;
+          margin-bottom:34px;
+        "
+      >
+        <div id="notificationsCard"
+          style="
+            flex:0 0 auto;
+            min-width:120px;
+            max-width:180px;
+            width:160px;
+            background:#f3f4f6;
+            border-radius:var(--radius-lg);
+            margin-right:0;
+            scroll-snap-align:center;
+            box-sizing:border-box;
+            padding:24px 18px;
+            display:flex;
+            flex-direction:column;
+            align-items:flex-start;
+            justify-content:center;
+            cursor:pointer;
+          "
+        >
+          <i data-feather="bell" style="color:#000;width:28px;height:28px;align-self:flex-start;margin-bottom:10px;"></i>
+          <div style="font-weight:600;font-size:1.05rem;margin-top:18px;text-align:left;align-self:stretch;">Erinnerungen</div>
+        </div>
+        <div
+          style="
+            flex:0 0 auto;
+            min-width:120px;
+            max-width:180px;
+            width:160px;
+            background:#f3f4f6;
+            border-radius:var(--radius-lg);
+            margin-right:0;
+            scroll-snap-align:center;
+            box-sizing:border-box;
+            padding:24px 18px;
+            display:flex;
+            flex-direction:column;
+            align-items:flex-start;
+            justify-content:center;
+          "
+        >
+          <i data-feather="settings" style="color:#000;width:28px;height:28px;align-self:flex-start;margin-bottom:10px;"></i>
+          <div style="font-weight:600;font-size:1.05rem;margin-top:18px;text-align:left;align-self:stretch;">Einstellungen</div>
+        </div>
+        <div
+          style="
+            flex:0 0 auto;
+            min-width:120px;
+            max-width:180px;
+            width:160px;
+            background:#f3f4f6;
+            border-radius:var(--radius-lg);
+            margin-right:0;
+            scroll-snap-align:center;
+            box-sizing:border-box;
+            padding:24px 18px;
+            display:flex;
+            flex-direction:column;
+            align-items:flex-start;
+            justify-content:center;
+          "
+        >
+          <i data-feather="book-open" style="color:#000;width:28px;height:28px;align-self:flex-start;margin-bottom:10px;"></i>
+          <div style="font-weight:600;font-size:1.05rem;margin-top:18px;text-align:left;align-self:stretch;">Tutorial</div>
+        </div>
+      </div>
+    </div>
+    <!-- "In Zukunft" Section -->
+    <section class="app-section" style="width:min(100%,var(--container));padding-left:20px;padding-right:20px;margin-top:0;">
+      <div style="display:flex;align-items:center;justify-content:space-between;position:relative;">
+        <h2 class="section-title" id="futureSectionTitle" style="font-size:1.4rem;margin-bottom:14px;margin-top:0;">In Zukunft</h2>
+        <button id="backButton" style="position:absolute;right:0;top:38%;transform:translateY(-50%);background:none;border:none;padding:0;margin:0;cursor:pointer;display:none;">
+          <i data-feather="arrow-left" style="width:24px;height:24px;color:#000;"></i>
+        </button>
+      </div>
+      <div id="futureList" style="display:flex;flex-direction:column;gap:12px;"></div>
+    </section>
+    <!-- Hinweis wenn keine Pending -->
+    <p id="noPendingMsg" class="hidden" style="display:none!important; text-align:center; color:var(--muted);margin-top:24px;">Keine ausstehenden Aufgaben</p>
+    <!-- Adminbereich (unverändert) -->
+    <div id="adminPanel">
+      <h2 class="section-title" style="margin-top:0;">Benutzerübersicht</h2>
+      <section class="grid" id="userGrid"></section>
+    </div>
+  </main>
 
-  <div class="welcome" style="display:none;">
-    <h1>Willkommen zurück!</h1>
-  </div>
-
-  <h2 style="display:none;">Ausstehend</h2>
+  <!-- Template für Karten (visuell im Task-Stil) -->
   <template id="card-template">
-    <article class="card">
-      <div class="badge-circle"></div>
-      <div class="card-header">
-        <h3 class="card-date"></h3>
-        <p class="card-info"></p>
+    <article class="task-card">
+      <div class="task-badge">16</div>
+      <div class="task-content">
+        <h3 class="task-title"></h3>
+        <p class="task-sub"></p>
+        <div class="card-buttons">
+          <button class="chip-btn accept" title="Annehmen"><i data-feather="check-circle"></i></button>
+          <button class="chip-btn decline" title="Ablehnen"><i data-feather="x-circle"></i></button>
+          <button class="chip-btn withdraw" title="Zurückziehen"><i data-feather="corner-up-left"></i></button>
+          <button class="chip-btn edit-entry" title="Bearbeiten"><i data-feather="edit-3"></i></button>
+        </div>
       </div>
-      <div class="card-body">
-        <p class="card-desc"></p>
-      </div>
-      <div class="card-buttons">
-        <button class="accept" title="Annehmen"><i data-feather="check-circle"></i></button>
-        <button class="decline" title="Ablehnen"><i data-feather="x-circle"></i></button>
-        <button class="withdraw" title="Zurückziehen"><i data-feather="corner-up-left"></i></button>
-        <button class="edit-entry" title="Bearbeiten"><i data-feather="edit"></i></button>
+      <div class="task-illustr">
+        <!-- optional Illustration pro Typ -->
+        <img alt="illustration" src="https://dummyimage.com/160x160/f3f4f6/aaaaaa.png&text=%F0%9F%90%BE" />
       </div>
     </article>
   </template>
-  <div id="noPendingMsg" style="text-align:center; opacity:0; transition:opacity 0.3s ease;">Keine ausstehenden Dienste</div>
-  <main>
-    <section class="grid" id="pendingGrid"></section>
-  </main>
-  
-  <h2 id="futureTitle" style="opacity:0; display:none; transition:opacity 0.4s ease;">In Zukunft</h2>
-  <main>
-    <section class="grid" id="upcomingGrid"></section>
-  </main>
+  <!-- Template für "In Zukunft" List Card -->
+  <template id="future-card-template">
+    <div class="future-list-card" style="display:flex;align-items:center;justify-content:space-between;background:#fff;border-radius:18px;box-shadow:0 2px 12px rgba(0,0,0,0.05);padding:16px 18px;gap:12px;">
+      <div style="display:flex;align-items:center;gap:14px;">
+        <div style="background:#f3f4f6;border-radius:12px;padding:8px;display:flex;align-items:center;justify-content:center;">
+          <i data-feather="feather" style="color:#3A6FF8;width:22px;height:22px;"></i>
+        </div>
+        <div>
+          <div class="future-title" style="font-weight:600;font-size:1.07rem;"></div>
+          <div class="future-date" style="color:var(--muted);font-size:.97rem;margin-top:2px;"></div>
+        </div>
+      </div>
+      <div class="future-status" style="font-weight:700;font-size:1.1rem;"></div>
+    </div>
+  </template>
 
-  <div id="adminPanel" style="visibility:none;">
-    <h2>Benutzerübersicht</h2>
-    <section class="grid" id="userGrid"></section>
-  </div>
-
+  <!-- ========== SCRIPT / FUNKTIONEN ========== -->
   <script>
+    // ----- Inline SVG Avatars -----
+    const profileSVGs = {
+      avatar01: `<svg viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="60" cy="60" r="58" fill="#FFF7E6" stroke="#000" stroke-width="3"/>
+        <path d="M35 35 L60 20 L85 35" fill="#FFF7E6" stroke="#000" stroke-width="3"/>
+        <circle cx="45" cy="55" r="6" fill="#000"/>
+        <circle cx="75" cy="55" r="6" fill="#000"/>
+        <path d="M40 80 Q60 92 80 80" stroke="#000" stroke-width="3" fill="none"/>
+      </svg>`, // Katze
+
+      avatar02: `<svg viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg">
+        <rect x="10" y="10" width="100" height="100" rx="20" fill="#E6F7FF" stroke="#000" stroke-width="3"/>
+        <circle cx="45" cy="55" r="6" fill="#000"/>
+        <circle cx="75" cy="55" r="6" fill="#000"/>
+        <path d="M40 80 Q60 90 80 80" stroke="#000" stroke-width="3" fill="none"/>
+      </svg>`, // Roboter
+
+      avatar03: `<svg viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="60" cy="60" r="58" fill="#FFF0F0" stroke="#000" stroke-width="3"/>
+        <path d="M20 55 Q30 20 60 25 Q90 20 100 55 Z" fill="#FFF0F0" stroke="#000" stroke-width="3"/>
+        <circle cx="45" cy="60" r="6" fill="#000"/>
+        <circle cx="75" cy="60" r="6" fill="#000"/>
+        <path d="M45 80 Q60 88 75 80" stroke="#000" stroke-width="3" fill="none"/>
+      </svg>`, // Hase
+
+      avatar04: `<svg viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="60" cy="60" r="58" fill="#E8F5E9" stroke="#000" stroke-width="3"/>
+        <rect x="35" y="30" width="50" height="60" rx="20" fill="#E8F5E9" stroke="#000" stroke-width="3"/>
+        <circle cx="45" cy="55" r="6" fill="#000"/>
+        <circle cx="75" cy="55" r="6" fill="#000"/>
+        <path d="M40 80 Q60 90 80 80" stroke="#000" stroke-width="3" fill="none"/>
+      </svg>`, // Bär
+
+      avatar05: `<svg viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="60" cy="60" r="58" fill="#FFFBEA" stroke="#000" stroke-width="3"/>
+        <path d="M25 35 L60 15 L95 35" fill="#FFFBEA" stroke="#000" stroke-width="3"/>
+        <circle cx="45" cy="55" r="6" fill="#000"/>
+        <circle cx="75" cy="55" r="6" fill="#000"/>
+        <path d="M40 80 Q60 95 80 80" stroke="#000" stroke-width="3" fill="none"/>
+      </svg>`, // Fuchs
+
+      avatar06: `<svg viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="60" cy="60" r="58" fill="#EAF4FF" stroke="#000" stroke-width="3"/>
+        <path d="M35 35 L45 20 L60 35 L75 20 L85 35" fill="#EAF4FF" stroke="#000" stroke-width="3"/>
+        <circle cx="45" cy="55" r="6" fill="#000"/>
+        <circle cx="75" cy="55" r="6" fill="#000"/>
+        <path d="M45 80 Q60 88 75 80" stroke="#000" stroke-width="3" fill="none"/>
+      </svg>`, // Wolf
+
+      avatar07: `<svg viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="60" cy="60" r="58" fill="#FFF0F8" stroke="#000" stroke-width="3"/>
+        <path d="M30 25 L40 45 L80 45 L90 25" fill="#FFF0F8" stroke="#000" stroke-width="3"/>
+        <circle cx="45" cy="60" r="6" fill="#000"/>
+        <circle cx="75" cy="60" r="6" fill="#000"/>
+        <path d="M42 82 Q60 94 78 82" stroke="#000" stroke-width="3" fill="none"/>
+      </svg>`, // Kaninchen rosa
+
+      avatar08: `<svg viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg">
+        <rect x="15" y="15" width="90" height="90" rx="45" fill="#EEF7FF" stroke="#000" stroke-width="3"/>
+        <circle cx="45" cy="55" r="6" fill="#000"/>
+        <circle cx="75" cy="55" r="6" fill="#000"/>
+        <path d="M40 80 Q60 92 80 80" stroke="#000" stroke-width="3" fill="none"/>
+      </svg>`, // Vogel
+
+      avatar09: `<svg viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="60" cy="60" r="58" fill="#F3F0FF" stroke="#000" stroke-width="3"/>
+        <path d="M40 25 Q60 5 80 25" stroke="#000" stroke-width="3" fill="#F3F0FF"/>
+        <circle cx="45" cy="55" r="6" fill="#000"/>
+        <circle cx="75" cy="55" r="6" fill="#000"/>
+        <path d="M40 80 Q60 92 80 80" stroke="#000" stroke-width="3" fill="none"/>
+      </svg>`, // Eule
+
+      avatar10: `<svg viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="60" cy="60" r="58" fill="#FFF4E6" stroke="#000" stroke-width="3"/>
+        <path d="M45 35 L60 20 L75 35" stroke="#000" stroke-width="3" fill="#FFF4E6"/>
+        <circle cx="45" cy="55" r="6" fill="#000"/>
+        <circle cx="75" cy="55" r="6" fill="#000"/>
+        <path d="M45 80 Q60 95 75 80" stroke="#000" stroke-width="3" fill="none"/>
+      </svg>` // Hund
+    };
     const supabase = window.supabase.createClient(
       "https://uewrybgyaanhjoyqpmky.supabase.co",
       "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVld3J5Ymd5YWFuaGpveXFwbWt5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjE3NjA2ODYsImV4cCI6MjA3NzMzNjY4Nn0.gTv68th-3S2hErX_Dp8RwjU3oZtQXLZFToLGUM5inT8"
     );
 
-    document.addEventListener('DOMContentLoaded', () => {
-      // Service Worker für Push-Benachrichtigungen registrieren
-      if ('serviceWorker' in navigator && 'PushManager' in window) {
-        navigator.serviceWorker.register('sw.js').then(reg => {
-          console.log('Service Worker registriert:', reg);
-        }).catch(err => {
-          console.error('Fehler bei der Service Worker Registrierung:', err);
-        });
-      }
+    const loginScreen  = document.getElementById('loginScreen');
+    const appHeader    = document.getElementById('appHeader');
+    const appMain      = document.getElementById('appMain');
+    const pendingGrid  = document.getElementById('pendingGrid');
+    const upcomingGrid = document.getElementById('upcomingGrid');
+    const noPendingMsg = document.getElementById('noPendingMsg');
+    const adminPanel   = document.getElementById('adminPanel');
+    const userGrid     = document.getElementById('userGrid');
 
-      // Berechtigung für Push-Benachrichtigungen anfordern
-      async function initPushNotifications() {
-        if (Notification.permission !== 'granted') {
-          const permission = await Notification.requestPermission();
-          if (permission !== 'granted') {
-            console.log('Push-Benachrichtigungen deaktiviert');
-            return;
-          }
+    feather.replace();
+
+    // ---------- Karten-Renderer (Task-Stil) ----------
+    function createCard(item, roleParam){
+      const role = roleParam || (localStorage.getItem('role') || 'user').toLowerCase();
+      const tpl = document.getElementById('card-template');
+      const frag = tpl.content.cloneNode(true);
+      const card = frag.querySelector('.task-card');
+
+      // Badge: kleine Zahl, fallback 1
+      frag.querySelector('.task-badge').textContent = (item.count || 1);
+
+      // Titel/Unterzeile
+      frag.querySelector('.task-title').textContent = item.typ || 'Ohne Typ';
+      const details = [item.bereich, item.datum].filter(Boolean).join(' • ');
+      frag.querySelector('.task-sub').textContent = item.beschreibung || details || 'Keine Beschreibung';
+
+      // Buttons je nach Rolle
+      const acceptBtn   = frag.querySelector('.accept');
+      const declineBtn  = frag.querySelector('.decline');
+      const withdrawBtn = frag.querySelector('.withdraw');
+      const editBtn     = frag.querySelector('.edit-entry');
+
+      if(role === 'admin'){ acceptBtn.style.display='none'; declineBtn.style.display='none'; }
+      else { withdrawBtn.style.display='none'; editBtn.style.display='none'; }
+
+      // expand/collapse: Buttons sichtbar machen
+      card.addEventListener('click', (e)=>{
+        if(e.target.closest('.card-buttons')) return;
+        card.classList.toggle('expanded');
+      });
+
+      // Actions
+      acceptBtn.addEventListener('click', (e)=>{ e.stopPropagation(); updateStatus(item.id,'approved'); });
+      declineBtn.addEventListener('click', (e)=>{ e.stopPropagation(); updateStatus(item.id,'pending');  });
+      withdrawBtn.addEventListener('click', async (e)=>{
+        e.stopPropagation();
+        if(confirm('Diesen Eintrag wirklich löschen?')){
+          await supabase.from('Database').update({status:'deleted'}).eq('id', item.id);
+          const pin = localStorage.getItem('id'); if(pin) loadCards(pin);
         }
-        const registration = await navigator.serviceWorker.ready;
-        const subscription = await registration.pushManager.subscribe({
-          userVisibleOnly: true,
-          applicationServerKey: 'BPI4n6n6n2zB3qv2n1NQqz3w8iM3w2fM6aZ2b4eG5g6d7f8g9h0j1k2l3m4n5o6p7' // <-- Ersetze durch deinen echten VAPID Public Key
-        });
-        console.log('Push Subscription:', JSON.stringify(subscription));
+      });
+      editBtn.addEventListener('click', (e)=>{ e.stopPropagation(); openAdminForm(item); });
+
+      feather.replace();
+      return frag;
+    }
+
+    async function updateStatus(id,newStatus){
+      const { error } = await supabase.from('Database').update({status:newStatus}).eq('id', id);
+      if(!error){
+        const pin = localStorage.getItem('id');
+        if(pin) loadCards(pin);
+      }
+    }
+
+    // ---------- Daten laden ----------
+    // Store global data for toggling between views
+    let _allFutureData = null;
+    let _showingNotifications = false;
+
+    // Global for bell shake interval
+    let _bellShakeInterval = null;
+
+    async function loadCards(pin){
+      // Remove old cards
+      // Remove pendingGrid and upcomingGrid content (legacy, but not used anymore visually)
+      if (window.pendingGrid) pendingGrid.innerHTML = '';
+      if (window.upcomingGrid) upcomingGrid.innerHTML = '';
+      // Remove futureList content
+      const futureList = document.getElementById('futureList');
+      if (futureList) futureList.innerHTML = '';
+      noPendingMsg.classList.add('hidden');
+
+      let data, error;
+      try{
+        if((localStorage.getItem('role')||'user') === 'admin'){
+          const res = await supabase.from('Database').select('*').eq('connected_user_A', pin);
+          data = res.data; error = res.error;
+        }else{
+          const res = await supabase.from('Database').select('*').ilike('id', `${pin}_%`);
+          data = res.data; error = res.error;
+        }
+      }catch(err){ error = err; }
+
+      if(error){
+        if (futureList) futureList.innerHTML = `<p style="color:#dc2626">Fehler beim Laden: ${error.message || error}</p>`;
+        return;
+      }
+      if(!data || data.length===0){
+        noPendingMsg.classList.add('hidden');
+        return;
       }
 
-      // Initialisiere Push Notifications nach erfolgreicher Registrierung
-      initPushNotifications();
-      const loginScreen = document.getElementById('loginScreen');
-      const welcomeDiv = document.querySelector('.welcome');
-      const welcomeTitle = document.querySelector('.welcome h1');
-      const pendingGrid = document.getElementById('pendingGrid');
-      const upcomingGrid = document.getElementById('upcomingGrid');
-      const noPendingMsg = document.getElementById('noPendingMsg');
-      const futureTitle = document.getElementById('futureTitle');
-      const adminPanel = document.getElementById('adminPanel');
-      const userGrid = document.getElementById('userGrid');
-      const header = document.querySelector('header');
+      // Save all data for toggling logic
+      _allFutureData = data;
 
-      // Feather icons initial replacement
+      // Show noPendingMsg if no pending, hide otherwise
+      const pending  = data.filter(d=>d.status==='pending');
+      const approved = data.filter(d=>d.status==='approved');
+      if(pending.length===0){ noPendingMsg.classList.add('hidden'); }
+
+      // If currently showing notifications, re-render notifications, else approved
+      if (_showingNotifications) {
+        showNotifications(pending);
+      } else {
+        const sectionTitle = document.getElementById('futureSectionTitle');
+        if (sectionTitle) sectionTitle.textContent = 'In Zukunft';
+        const backButton = document.getElementById('backButton');
+        if (backButton) backButton.style.display = 'none';
+        if (futureList) {
+          futureList.innerHTML = '';
+          futureList.classList.add('fade-enter');
+          const cards = await Promise.all(approved.map(item => createFutureCard(item)));
+          cards.forEach(card => futureList.appendChild(card));
+          requestAnimationFrame(() => {
+            futureList.classList.add('fade-enter-active');
+          });
+          setTimeout(() => {
+            futureList.classList.remove('fade-enter');
+            futureList.classList.remove('fade-enter-active');
+          }, 500);
+        }
+      }
       feather.replace();
 
-      // Neue Template-basierte Card-Logik
-      function createCard(item, roleParam) {
-        const role = roleParam || (localStorage.getItem('role') || '').toLowerCase();
-        const template = document.getElementById('card-template');
-        const clone = template.content.cloneNode(true);
-        const card = clone.querySelector('.card');
+      // ---- Glockenüberwachung für Pending-Elemente (Animation handled by monitorPendingStatus) ----
+    }
 
-        // Badge
-        clone.querySelector('.badge-circle').textContent = item.typ?.slice(0, 2).toLowerCase() || '';
-        clone.querySelector('.card-date').textContent = item.datum || '';
-        clone.querySelector('.card-info').textContent = `${item.typ || ''} ${item.bereich || ''}`;
-        clone.querySelector('.card-desc').textContent = item.beschreibung || '';
+    // ---------- Glockenüberwachung für Pending-Elemente ----------
+    let _bellStatusInterval = null;
 
-        const acceptBtn = clone.querySelector('.accept');
-        const declineBtn = clone.querySelector('.decline');
-        const withdrawBtn = clone.querySelector('.withdraw');
-        const editBtn = clone.querySelector('.edit-entry');
+    async function monitorPendingStatus() {
+      if (_bellStatusInterval) clearInterval(_bellStatusInterval);
 
-        if (role === 'admin') {
-          acceptBtn.style.display = 'none';
-          declineBtn.style.display = 'none';
-        } else {
-          withdrawBtn.style.display = 'none';
-          editBtn.style.display = 'none';
+      let _bellFirstRun = true;
+
+      async function checkPendingStatus() {
+        const pin = localStorage.getItem('id');
+        if (!pin) {
+          console.log("[BellCheck] Kein PIN gefunden, Glockenprüfung übersprungen.");
+          return;
+        }
+        console.log(`[BellCheck] Überprüfung gestartet für PIN: ${pin}`);
+        const { data, error } = await supabase
+          .from('Database')
+          .select('id')
+          .ilike('id', `${pin}_%`)
+          .eq('status', 'pending');
+        console.log(`[BellCheck] Gefundene Pending-Elemente: ${data ? data.length : 0}`);
+
+        const notificationsCard = document.getElementById('notificationsCard');
+        if (!notificationsCard) {
+          console.log("[BellCheck] notificationsCard nicht gefunden.");
+          return;
+        }
+        const bellIcon = notificationsCard.querySelector('i[data-feather="bell"], svg.feather-bell');
+        if (!bellIcon) {
+          console.log("[BellCheck] Bell-Icon nicht gefunden.");
+          return;
         }
 
-        card.addEventListener('click', (e) => {
-          if (e.target.closest('.card-buttons')) return;
-          card.classList.toggle('expanded');
-        });
-
-        acceptBtn.addEventListener('click', (e) => {
-          e.stopPropagation();
-          console.log('Annehmen:', item.id);
-          updateStatus(item.id, 'approved');
-        });
-
-        declineBtn.addEventListener('click', (e) => {
-          e.stopPropagation();
-          console.log('Ablehnen:', item.id);
-          card.style.opacity = '0.5';
-          card.style.pointerEvents = 'none';
-          updateStatus(item.id, 'pending');
-        });
-
-        withdrawBtn.addEventListener('click', (e) => {
-          e.stopPropagation();
-          console.log('Zurückziehen:', item.id);
-          if (confirm('Diesen Eintrag wirklich löschen?')) {
-            supabase
-              .from('Database')
-              .update({ status: 'deleted' })
-              .eq('id', item.id)
-              .then(({ error }) => {
-                if (!error) {
-                  card.style.opacity = '0.5';
-                  card.style.pointerEvents = 'none';
-                }
-              });
+        if (data && data.length > 0) {
+          console.log("[BellCheck] Glocke morphs zu grünem Häkchen.");
+          // Temporarily morph to a green checkmark with fade animation
+          const bellParent = bellIcon.parentElement;
+          if (bellParent) {
+            bellParent.style.transition = 'opacity 0.4s ease';
+            bellParent.style.opacity = '0';
+            setTimeout(() => {
+              bellParent.innerHTML = feather.icons['check'].toSvg({ width: 28, height: 28, color: '#16a34a' });
+              bellParent.style.opacity = '1';
+              setTimeout(() => {
+                bellParent.style.opacity = '0';
+                setTimeout(() => {
+                  bellParent.innerHTML = feather.icons['bell'].toSvg({ width: 28, height: 28, color: '#000' });
+                  bellParent.style.opacity = '1';
+                  const newBell = bellParent.querySelector('svg');
+                  if (newBell) {
+                    newBell.classList.add('bell-shake');
+                    setTimeout(() => newBell.classList.remove('bell-shake'), 1000);
+                  }
+                }, 400);
+              }, 800);
+            }, 400);
           }
+        } else {
+          console.log("[BellCheck] Keine Pending-Elemente gefunden. Glocke bleibt still.");
+        }
+      }
+
+      // Initial und alle 10 Sekunden prüfen
+      await checkPendingStatus();
+      _bellStatusInterval = setInterval(() => {
+        console.log("[BellCheck] Starte Glockenprüfung...");
+        checkPendingStatus();
+      }, 10000);
+    }
+    // Show Benachrichtigungen (pending) cards in futureList and update heading
+    async function showNotifications(pending) {
+      const sectionTitle = document.getElementById('futureSectionTitle');
+      if (sectionTitle) sectionTitle.textContent = 'Erinnerungen';
+      const futureList = document.getElementById('futureList');
+      if (futureList) {
+        futureList.innerHTML = '';
+        futureList.classList.add('fade-enter');
+        if (pending && pending.length > 0) {
+          const cards = await Promise.all(pending.map(item => createFutureCard(item)));
+          cards.forEach(card => futureList.appendChild(card));
+        } else {
+          // Optional: show message if no notifications
+          const msg = document.createElement('div');
+          msg.textContent = 'Keine Erinnerungen';
+          msg.style.color = 'var(--muted)';
+          msg.style.textAlign = 'center';
+          msg.style.margin = '18px 0';
+          futureList.appendChild(msg);
+        }
+        requestAnimationFrame(() => {
+          futureList.classList.add('fade-enter-active');
+        });
+        setTimeout(() => {
+          futureList.classList.remove('fade-enter');
+          futureList.classList.remove('fade-enter-active');
+        }, 500);
+      }
+      feather.replace();
+    }
+
+
+    // Create "In Zukunft" card for approved items - Transactions-style layout with initials, title, status, and toggleable description
+    async function createFutureCard(item) {
+      const tpl = document.createElement('div');
+      tpl.className = 'future-list-card';
+      tpl.style.cssText = `
+        display:flex;
+        align-items:center;
+        justify-content:space-between;
+        background:#fff;
+        border:none;
+        border-radius:0;
+        box-shadow:none;
+        padding:14px 0;
+        gap:12px;
+        cursor:pointer;
+        flex-direction:column;
+        border-bottom:1px solid #e5e7eb;
+      `;
+
+      // --- Outer row ---
+      // Add gap for more spacing between initials and title
+      const row = document.createElement('div');
+      row.style.cssText = 'display:flex;align-items:center;justify-content:space-between;width:100%;gap:16px;';
+
+      // Left: Initials (date) box
+      const initialsWrap = document.createElement('div');
+      initialsWrap.style.cssText = `
+        background:#000;
+        border-radius:14px;
+        width:42px;
+        height:42px;
+        display:flex;
+        align-items:center;
+        justify-content:center;
+        font-weight:700;
+        color:#fff;
+        font-size:0.9rem;
+        flex-shrink:0;
+      `;
+
+      let dateDisplay = '??';
+      if (item.datum) {
+        try {
+          const dateObj = new Date(item.datum);
+          if (!isNaN(dateObj)) {
+            const day = String(dateObj.getDate()).padStart(2, '0');
+            const month = String(dateObj.getMonth() + 1).padStart(2, '0');
+            dateDisplay = `${day}.${month}`;
+          }
+        } catch {}
+      }
+      initialsWrap.textContent = dateDisplay;
+
+      // Middle: Bereich (title) and Typ (subtitle)
+      const midWrap = document.createElement('div');
+      midWrap.style.cssText = 'flex:1;display:flex;flex-direction:column;align-items:flex-start;';
+
+      const titleEl = document.createElement('div');
+      titleEl.textContent = item.bereich || 'Ohne Bereich';
+      titleEl.style.cssText = 'font-weight:600;font-size:1.05rem;color:#000;';
+
+      const subEl = document.createElement('div');
+      subEl.textContent = item.typ || '';
+      subEl.style.cssText = 'font-size:0.92rem;color:var(--muted);margin-top:2px;';
+
+      midWrap.appendChild(titleEl);
+      midWrap.appendChild(subEl);
+
+      // Right: Status/value
+      const statusEl = document.createElement('div');
+      statusEl.style.cssText = 'font-weight:600;font-size:1rem;flex-shrink:0;';
+      statusEl.textContent = '';
+
+      row.appendChild(initialsWrap);
+      row.appendChild(midWrap);
+      row.appendChild(statusEl);
+
+      // Add action buttons if in "Erinnerungen" (pending) section
+      if (item.status === 'pending') {
+        const actionWrap = document.createElement('div');
+        actionWrap.style.cssText = 'display:flex;gap:14px;margin-left:auto;';
+
+        const acceptBtn = document.createElement('button');
+        acceptBtn.innerHTML = feather.icons['check-circle'].toSvg({ width: 22, height: 22 });
+        acceptBtn.style.cssText = 'background:none;border:none;cursor:pointer;color:var(--success);';
+        acceptBtn.title = 'Annehmen';
+        acceptBtn.addEventListener('click', async (e) => {
+          e.stopPropagation();
+          await supabase.from('Database').update({ status: 'approved' }).eq('id', item.id);
+          const pin = localStorage.getItem('id');
+          if (pin) loadPendingCards();
         });
 
+        const declineBtn = document.createElement('button');
+        declineBtn.innerHTML = feather.icons['x-circle'].toSvg({ width: 22, height: 22 });
+        declineBtn.style.cssText = 'background:none;border:none;cursor:pointer;color:var(--danger);';
+        declineBtn.title = 'Ablehnen';
+        declineBtn.addEventListener('click', async (e) => {
+          e.stopPropagation();
+          await supabase.from('Database').update({ status: 'declined' }).eq('id', item.id);
+          const pin = localStorage.getItem('id');
+          if (pin) loadPendingCards();
+        });
+
+        actionWrap.appendChild(acceptBtn);
+        actionWrap.appendChild(declineBtn);
+        row.appendChild(actionWrap);
+      }
+
+      // For admins: show edit button for declined containers
+      const role = (localStorage.getItem('role') || 'user').toLowerCase();
+      if (role === 'admin' && item.status === 'declined') {
+        const actionWrap = document.createElement('div');
+        actionWrap.style.cssText = 'display:flex;gap:14px;margin-left:auto;';
+
+        const editBtn = document.createElement('button');
+        editBtn.innerHTML = feather.icons['edit-3'].toSvg({ width: 22, height: 22 });
+        editBtn.style.cssText = 'background:none;border:none;cursor:pointer;color:#000;';
+        editBtn.title = 'Bearbeiten';
         editBtn.addEventListener('click', (e) => {
           e.stopPropagation();
-          console.log('Bearbeiten:', item.id);
-          openAdminForm();
-          document.getElementById('datumInput').value = item.datum || '';
-          document.getElementById('typInput').value = item.typ || '';
-          document.getElementById('bereichInput').value = item.bereich || '';
-          document.getElementById('beschreibungInput').value = item.beschreibung || '';
-          document.getElementById('saveNew').textContent = 'Änderungen speichern';
-          document.getElementById('saveNew').dataset.editId = item.id;
+          openAdminForm(item);
         });
 
-        feather.replace();
-        return clone;
+        actionWrap.appendChild(editBtn);
+        row.appendChild(actionWrap);
       }
 
-      // Update status in Supabase and reload cards
-      async function updateStatus(id, newStatus) {
-        try {
-          const { error } = await supabase
-            .from('Database')
-            .update({ status: newStatus })
-            .eq('id', id);
-          if (error) {
-            return;
-          }
-          // Reload cards with current pin
-          const pin = localStorage.getItem('pin');
-          if (pin) {
-            await loadCards(pin);
-          }
-        } catch (err) {
-        }
-      }
+      // Description (hidden initially)
+      const desc = document.createElement('div');
+      desc.textContent = item.beschreibung || 'Keine Beschreibung';
+      desc.style.cssText = 'width:100%;color:var(--muted);font-size:0.9rem;margin-top:8px;display:none;';
 
-      // Load cards and sort by status
-      async function loadCards(pin) {
-        pendingGrid.innerHTML = '<p style="text-align:center;">Lade Daten...</p>';
-        upcomingGrid.innerHTML = '';
-        noPendingMsg.style.opacity = '0';
-        futureTitle.style.opacity = '0';
-        futureTitle.style.display = 'none';
-
-        try {
-          let data, error;
-          // Prüfe Rolle aus localStorage
-          if (localStorage.getItem('role') === 'admin') {
-            // Admin sieht alle Container, die über connected_user_A mit seiner ID verbunden sind
-            const result = await supabase
-              .from('Database')
-              .select('*')
-              .eq('connected_user_A', pin);
-            data = result.data;
-            error = result.error;
-          } else {
-            // Standardabfrage für User
-            const result = await supabase
-              .from('Database')
-              .select('*')
-              .ilike('id', `${pin}_%`);
-            data = result.data;
-            error = result.error;
-          }
-
-          if (error) {
-            pendingGrid.innerHTML = `<p style="color:red;">Fehler beim Laden: ${error.message}</p>`;
-            return;
-          }
-
-          if (!data || data.length === 0) {
-            pendingGrid.innerHTML = '<p style="text-align:center;">Keine Einträge gefunden.</p>';
-            return;
-          }
-
-          // Clear grids
-          pendingGrid.innerHTML = '';
-          upcomingGrid.innerHTML = '';
-
-          // Filter by status
-          const pendingItems = data.filter(d => d.status === 'pending');
-          const approvedItems = data.filter(d => d.status === 'approved');
-
-          // Show pending or noPendingMsg
-          if (pendingItems.length === 0) {
-            noPendingMsg.style.opacity = '1';
-          } else {
-            noPendingMsg.style.opacity = '0';
-            pendingItems.forEach(item => {
-              const cardFrag = createCard(item);
-              pendingGrid.appendChild(cardFrag);
-            });
-            feather.replace();
-          }
-
-          // Show approved in upcoming section
-          if (approvedItems.length > 0) {
-            futureTitle.style.display = 'block';
-            setTimeout(() => { futureTitle.style.opacity = '1'; }, 50);
-            approvedItems.forEach(item => {
-              const cardFrag = createCard(item);
-              upcomingGrid.appendChild(cardFrag);
-            });
-            feather.replace();
-          } else {
-            futureTitle.style.opacity = '0';
-            futureTitle.style.display = 'none';
-          }
-        } catch (err) {
-          pendingGrid.innerHTML = `<p style="color:red;">Fehler beim Laden: ${err.message}</p>`;
-        }
-      }
-
-      // Add admin edit button and show admin panel
-      function addAdminButton() {
-        // Check if already added
-        if (document.querySelector('.edit')) return;
-        const editIcon = document.createElement('div');
-        editIcon.className = 'edit';
-        editIcon.title = 'Neuen Dienst hinzufügen';
-        editIcon.innerHTML = '<i data-feather="edit-3"></i>';
-        editIcon.onclick = openAdminForm;
-        header.appendChild(editIcon);
-        feather.replace();
-        adminPanel.style.display = 'block';
-        loadUsers();
-      }
-
-      // Load users for admin panel
-      async function loadUsers() {
-        userGrid.innerHTML = '<p style="text-align:center;">Lade Benutzer...</p>';
-        try {
-          const { data, error } = await supabase
-            .from('Database')
-            .select('UserName, id')
-            .not('id', 'is', null);
-
-          if (error) {
-            userGrid.innerHTML = `<p style="color:red;">Fehler beim Laden: ${error.message}</p>`;
-            return;
-          }
-
-          if (!data || data.length === 0) {
-            userGrid.innerHTML = '<p style="text-align:center;">Keine Benutzer gefunden.</p>';
-            return;
-          }
-
-          userGrid.innerHTML = '';
-          // Unique users by id
-          const uniqueUsers = [...new Map(data.map(u => [u.id, u])).values()];
-          uniqueUsers.forEach(user => {
-            const userCard = document.createElement('div');
-            userCard.className = 'user-card';
-            userCard.textContent = `${user.UserName} (${user.id})`;
-            userGrid.appendChild(userCard);
-          });
-        } catch (err) {
-          userGrid.innerHTML = `<p style="color:red;">Fehler beim Laden: ${err.message}</p>`;
-        }
-      }
-
-      // Open admin form to add new service
-      async function openAdminForm() {
-        if(document.getElementById('adminForm')) return; // prevent multiple forms
-        const formHtml = `
-          <div id="adminForm" style="position:fixed; top:50%; left:50%; transform:translate(-50%,-50%); background:white; border:2px solid black; border-radius:10px; padding:20px; z-index:1000; max-width: 400px; width: 90%;">
-            <h3>Neuen Dienst anlegen</h3>
-            <label for="userSelect">User:</label>
-            <select id="userSelect" style="width:100%; padding:8px; margin-bottom:10px;"></select>
-            <label for="datumInput">Datum:</label>
-            <input id="datumInput" type="date" style="width:100%; padding:8px; margin-bottom:10px;" />
-            <label for="typInput">Typ:</label>
-            <input id="typInput" type="text" placeholder="Typ" style="width:100%; padding:8px; margin-bottom:10px;" />
-            <label for="bereichInput">Bereich:</label>
-            <input id="bereichInput" type="text" placeholder="Bereich" style="width:100%; padding:8px; margin-bottom:10px;" />
-            <label for="beschreibungInput">Beschreibung:</label>
-            <textarea id="beschreibungInput" placeholder="Beschreibung" style="width:100%; padding:8px; margin-bottom:10px;"></textarea>
-            <div style="text-align:right;">
-              <button id="saveNew" style="background:#3a6ff8; color:white; border:none; border-radius:8px; padding:8px 16px; cursor:pointer; user-select:none;">Speichern</button>
-              <button id="cancelNew" style="margin-left:10px; border:none; border-radius:8px; padding:8px 16px; cursor:pointer; user-select:none;">Abbrechen</button>
-            </div>
-          </div>
-          <div id="adminFormBackdrop" style="position:fixed; top:0; left:0; width:100vw; height:100vh; background:#00000088; z-index:999;"></div>
-        `;
-        document.body.insertAdjacentHTML('beforeend', formHtml);
-        feather.replace();
-
-        const { data: users, error } = await supabase
-          .from('Database')
-          .select('UserName, id')
-          .not('id', 'is', null);
-
-        // Nur Datensätze mit IDs, die genau 4 Zeichen lang sind
-        const filteredUsers = (users || []).filter(u => u.id && u.id.length === 4);
-
-        const userSelect = document.getElementById('userSelect');
-        if (filteredUsers) {
-          const uniqueUsers = [...new Map(filteredUsers.map(u => [u.id, u])).values()];
-          uniqueUsers.forEach(u => {
-            const opt = document.createElement('option');
-            opt.value = u.id;
-            opt.textContent = `${u.UserName} (${u.id})`;
-            userSelect.appendChild(opt);
-          });
-        }
-
-        document.getElementById('cancelNew').onclick = () => {
-          document.getElementById('adminForm').remove();
-          document.getElementById('adminFormBackdrop').remove();
-        };
-        document.getElementById('adminFormBackdrop').onclick = () => {
-          document.getElementById('adminForm').remove();
-          document.getElementById('adminFormBackdrop').remove();
-        };
-
-        document.getElementById('saveNew').onclick = async () => {
-          const userId = userSelect.value;
-          const datum = document.getElementById('datumInput').value;
-          const typ = document.getElementById('typInput').value.trim();
-          const bereich = document.getElementById('bereichInput').value.trim();
-          const beschreibung = document.getElementById('beschreibungInput').value.trim();
-
-          if (!userId || !datum || !typ || !bereich || !beschreibung) {
-            return;
-          }
-
-          const saveButton = document.getElementById('saveNew');
-          if (saveButton.textContent === 'Änderungen speichern' && saveButton.dataset.editId) {
-            // Bearbeitungsmodus: bestehenden Datensatz aktualisieren
-            const { error } = await supabase
-              .from('Database')
-              .update({ datum, typ, bereich, beschreibung })
-              .eq('id', saveButton.dataset.editId);
-            if (error) {
-              return;
-            }
-            document.getElementById('adminForm').remove();
-            document.getElementById('adminFormBackdrop').remove();
-            const currentPin = localStorage.getItem('id');
-            if (currentPin) await loadCards(currentPin);
-          } else {
-            // Neuer Eintrag
-            // Lade Namen des Erstellers anhand der PIN (localStorage id)
-            const creatorPin = localStorage.getItem('id');
-            let creatorName = 'Unbekannt';
-            const { data: creatorData, error: creatorError } = await supabase
-              .from('Database')
-              .select('UserName')
-              .eq('id', creatorPin)
-              .single();
-            if (!creatorError && creatorData && creatorData.UserName) {
-              creatorName = creatorData.UserName;
-            }
-            const randomPart = Math.floor(100000 + Math.random() * 900000);
-            const id = `${userId}_${randomPart}`;
-            const { error } = await supabase
-              .from('Database')
-              .insert([{ id, datum, typ, bereich, beschreibung, connected_user_A: localStorage.getItem('id'), UserName: creatorName, status: 'pending' }]);
-            if (error) {
-              return;
-            }
-            document.getElementById('adminForm').remove();
-            document.getElementById('adminFormBackdrop').remove();
-            const currentPin = localStorage.getItem('id');
-            if (currentPin) await loadCards(currentPin);
-          }
-        };
-      }
-
-      // Login button event
-      document.getElementById('loginBtn').addEventListener('click', async () => {
-        const pinInput = document.getElementById('pinInput');
-        const pin = pinInput.value.trim();
-        const loginError = document.getElementById('loginError');
-
-        if (pin.length !== 4) {
-          loginError.style.display = 'block';
-          return;
-        }
-
-        loginError.style.display = 'none';
-
-        const { data: userData, error } = await supabase
-          .from('Database')
-          .select('*')
-          .eq('id', pin);
-
-        if (error || !userData || userData.length === 0) {
-          loginError.style.display = 'block';
-          return;
-        }
-
-        loginError.style.display = 'none';
-        loginScreen.style.display = 'none';
-        welcomeDiv.style.display = 'block';
-
-        const user = userData[0];
-        localStorage.setItem('id', pin);
-        welcomeTitle.textContent = `Willkommen zurück, ${user.UserName}!`;
-
-        // Rolle im localStorage setzen
-        if (user.role === 'admin') {
-          localStorage.setItem('role', 'admin');
-        } else {
-          localStorage.setItem('role', 'user');
-        }
-
-        // Wenn admin -> Stift anzeigen und Admin Panel zeigen
-        if (user.role === 'admin') {
-          addAdminButton();
-          // Titel "Ausstehend" zu "Übersicht" ändern
-          const h2s = document.querySelectorAll('h2');
-          if (h2s.length > 0) {
-            h2s[0].textContent = 'Übersicht';
-          }
-        } else {
-          adminPanel.style.display = 'none';
-          const editIcon = document.querySelector('.edit');
-          if(editIcon) editIcon.remove();
-        }
-
-        await loadCards(pin);
-
-        // Echtzeit-Aktualisierung aktivieren (Supabase Realtime)
-        let reloadTimeout;
-        const channel = supabase
-          .channel('live-updates')
-          .on('postgres_changes',
-            { event: '*', schema: 'public', table: 'Database' },
-            async (payload) => {
-              console.log('Live-Update:', payload);
-
-              if (reloadTimeout) clearTimeout(reloadTimeout);
-              reloadTimeout = setTimeout(async () => {
-                const currentPin = localStorage.getItem('id');
-                if (currentPin) {
-                  await loadCards(currentPin);
-                }
-              }, 500);
-
-              // --- Neue Logik: Benachrichtigung bei eigenen Containern ---
-              const currentPin = localStorage.getItem('id');
-              const newData = payload.new || {};
-              const eventType = payload.eventType;
-
-              if (newData.id && newData.id.startsWith(currentPin + '_')) {
-                if (document.hidden && Notification.permission === 'granted') {
-                  const registration = await navigator.serviceWorker.ready;
-
-                  const title = eventType === 'UPDATE'
-                    ? 'Dein Dienst wurde aktualisiert'
-                    : eventType === 'INSERT'
-                    ? 'Neuer Dienst erstellt'
-                    : 'Ein Dienst wurde geändert';
-
-                  const message = `Typ: ${newData.typ || 'Unbekannt'} • Status: ${newData.status || 'geändert'}`;
-
-                  registration.showNotification(title, {
-                    body: message,
-                    icon: '/icon.png',
-                    badge: '/badge.png',
-                    data: { id: newData.id, status: newData.status },
-                    actions: [
-                      { action: 'open', title: 'App öffnen' }
-                    ]
-                  });
-                }
-              }
-            }
-          )
-          .subscribe();
+      // Toggle description, closing others
+      tpl.addEventListener('click', () => {
+        const allCards = document.querySelectorAll('.future-list-card');
+        allCards.forEach(c => {
+          const d = c.querySelector('div[style*="color:var(--muted)"]');
+          if (d && d !== desc) d.style.display = 'none';
+        });
+        desc.style.display = desc.style.display === 'none' ? 'block' : 'none';
       });
 
-      // Optional: allow Enter key on PIN input to trigger login
-      document.getElementById('pinInput').addEventListener('keydown', (e) => {
-        if (e.key === 'Enter') {
-          e.preventDefault();
-          document.getElementById('loginBtn').click();
-        }
-      });
-    });
-  </script>
+      tpl.appendChild(row);
+      tpl.appendChild(desc);
 
-  <script>
-    if (!window.featherInitialized) {
       feather.replace();
-      window.featherInitialized = true;
+      return tpl;
     }
-      
-      // Beispiel: Manuell eine Notification auslösen (zum Testen)
-      async function sendLocalNotification(title, message) {
-        // Falls keine Erlaubnis erteilt wurde
-        if (Notification.permission !== 'granted') {
-          const permission = await Notification.requestPermission();
-          if (permission !== 'granted') return;
-        }
 
-        const registration = await navigator.serviceWorker.ready;
+    // ---------- Admin Helfer ----------
+    async function loadUsers(){
+      userGrid.innerHTML = '<p style="text-align:center;color:var(--muted)">Lade Benutzer…</p>';
+      const {data, error} = await supabase.from('Database').select('UserName, id').not('id','is',null);
+      if(error){ userGrid.innerHTML = `<p style="color:#dc2626">${error.message}</p>`; return; }
+      userGrid.innerHTML='';
+      const unique = [...new Map((data||[]).map(u=>[u.id,u])).values()];
+      unique.forEach(u=>{
+        const div = document.createElement('div');
+        div.className = 'user-card';
+        div.textContent = `${u.UserName} (${u.id})`;
+        userGrid.appendChild(div);
+      });
+    }
 
-        registration.showNotification(title, {
-          body: message,
-          icon: '/icon.png',
-          badge: '/badge.png',
-          data: { link: window.location.href },
-          actions: [
-            { action: 'open', title: 'App öffnen' },
-            { action: 'dismiss', title: 'Schließen' }
-          ]
-        });
+    function addAdminButton(){
+      if(document.querySelector('.edit-fab')) return;
+      const fab = document.createElement('button');
+      fab.className = 'btn-primary edit-fab';
+      fab.style.position='fixed'; fab.style.right='22px'; fab.style.bottom='24px';
+      fab.style.padding='12px 16px'; fab.style.borderRadius='14px'; fab.style.zIndex='40';
+      fab.innerHTML = '<i data-feather="edit-3"></i>&nbsp;Eintrag';
+      fab.onclick = ()=>openAdminForm();
+      document.body.appendChild(fab);
+      feather.replace();
+      adminPanel.style.display='block';
+      loadUsers();
+    }
+
+    async function openAdminForm(existing){
+      if(document.getElementById('adminForm')) return;
+      const wrap = document.createElement('div');
+      wrap.id='adminForm';
+      wrap.innerHTML = `
+        <div style="position:fixed;inset:0;background:#0006;z-index:70" id="backdrop"></div>
+        <div style="position:fixed;z-index:80;left:50%;top:50%;transform:translate(-50%,-50%);background:#fff;border-radius:16px;box-shadow:var(--shadow-lg);width:min(92vw,520px);padding:20px">
+          <h3 style="margin:0 0 12px;font-weight:800">Dienst ${existing?'bearbeiten':'anlegen'}</h3>
+          <label>Benutzer</label>
+          <select id="userSelect" class="input" style="width:100%;margin-bottom:10px"></select>
+          <label>Datum</label>
+          <input id="datumInput" type="date" class="input" />
+          <label>Typ</label>
+          <input id="typInput" class="input" placeholder="Typ" />
+          <label>Bereich</label>
+          <input id="bereichInput" class="input" placeholder="Bereich" />
+          <label>Beschreibung</label>
+          <textarea id="beschreibungInput" class="input" placeholder="Beschreibung" rows="3"></textarea>
+          <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:12px">
+            <button id="cancelNew" class="chip-btn">Abbrechen</button>
+            <button id="saveNew" class="btn-primary">${existing?'Änderungen speichern':'Speichern'}</button>
+          </div>
+        </div>`;
+      document.body.appendChild(wrap);
+
+      const {data: users} = await supabase.from('Database').select('UserName,id').not('id','is',null);
+      const filtered = (users||[]).filter(u=>u.id && u.id.length===4);
+      const sel = document.getElementById('userSelect');
+      ([...new Map(filtered.map(u=>[u.id,u])).values()]).forEach(u=>{
+        const opt=document.createElement('option'); opt.value=u.id; opt.textContent=`${u.UserName} (${u.id})`; sel.appendChild(opt);
+      });
+
+      if(existing){
+        document.getElementById('datumInput').value = existing.datum || '';
+        document.getElementById('typInput').value = existing.typ || '';
+        document.getElementById('bereichInput').value = existing.bereich || '';
+        document.getElementById('beschreibungInput').value = existing.beschreibung || '';
+        document.getElementById('saveNew').dataset.editId = existing.id;
       }
 
-      // Beispielaufruf:
-      document.addEventListener('keydown', (e) => {
-        if (e.key === 'n') { // Wenn du "n" drückst, kommt eine Test-Nachricht
-          sendLocalNotification('Testbenachrichtigung', 'Dies ist eine lokale Push-Nachricht.');
+      const close = ()=>wrap.remove();
+      document.getElementById('backdrop').onclick = close;
+      document.getElementById('cancelNew').onclick = close;
+
+      document.getElementById('saveNew').onclick = async ()=>{
+        const userId = sel.value;
+        const datum = document.getElementById('datumInput').value;
+        const typ   = document.getElementById('typInput').value.trim();
+        const bereich = document.getElementById('bereichInput').value.trim();
+        const beschreibung = document.getElementById('beschreibungInput').value.trim();
+        if(!userId || !datum || !typ || !bereich || !beschreibung) return;
+
+        const btn = document.getElementById('saveNew');
+        if(btn.dataset.editId){
+          await supabase.from('Database').update({
+            datum,
+            typ,
+            bereich,
+            beschreibung,
+            status: 'pending'
+          }).eq('id', btn.dataset.editId);
+        }else{
+          const creatorPin = localStorage.getItem('id');
+          let creatorName = 'Unbekannt';
+          const {data:cData} = await supabase.from('Database').select('UserName').eq('id', creatorPin).single();
+          if(cData && cData.UserName) creatorName = cData.UserName;
+          const randomPart = Math.floor(100000 + Math.random()*900000);
+          const id = `${userId}_${randomPart}`;
+          await supabase.from('Database').insert([{ id, datum, typ, bereich, beschreibung, connected_user_A: creatorPin, UserName: creatorName, status:'pending' }]);
         }
-      });
+        close();
+        const pin=localStorage.getItem('id'); if(pin) loadCards(pin);
+      };
+    }
+
+    // Auto-Login via Cookie
+    document.addEventListener('DOMContentLoaded', async ()=>{
+      const match = document.cookie.match(/(?:^|; )lilly_pin=([^;]+)/);
+      if (match && match[1]) {
+        const savedPin = match[1];
+        console.log("[AutoLogin] Gefundener Cookie-PIN:", savedPin);
+        const {data:userData, error} = await supabase.from('Database').select('*').eq('id', savedPin).limit(1);
+        if(!error && userData && userData.length > 0){
+          const user = userData[0];
+          localStorage.setItem('id', savedPin);
+          localStorage.setItem('role', user.role || 'user');
+          const userMainName = document.getElementById('userMainName');
+          if (userMainName && user.UserName) userMainName.textContent = user.UserName;
+          // Avatar SVG rendering
+          const avatarContainer = document.querySelector('#appMain div[style*="width:96px"]');
+          if (avatarContainer && user.user_profile_pic && profileSVGs[user.user_profile_pic]) {
+            avatarContainer.innerHTML = profileSVGs[user.user_profile_pic];
+          } else if (avatarContainer) {
+            avatarContainer.innerHTML = profileSVGs['avatar01'];
+          }
+          document.getElementById('loginScreen').style.display = 'none';
+          document.getElementById('appMain').classList.remove('hidden');
+          if((user.role||'user') === 'admin'){ addAdminButton(); }
+          await loadCards(savedPin);
+          monitorPendingStatus();
+        } else {
+          console.log("[AutoLogin] Kein gültiger User gefunden oder Fehler:", error);
+        }
+      }
+    });
+
+    // ---------- Login ----------
+    document.getElementById('loginBtn').addEventListener('click', async ()=>{
+      const pin = (document.getElementById('pinInput').value || '').trim();
+      const err = document.getElementById('loginError');
+      if(pin.length!==4){ err.style.display='block'; return; }
+      err.style.display='none';
+
+      // Tabelle "Database" ist die Usersource für die PIN
+      const {data:userData, error} = await supabase.from('Database').select('*').eq('id', pin).limit(1);
+      if(error || !userData || userData.length===0){ err.style.display='block'; return; }
+
+      const user = userData[0];
+      localStorage.setItem('id', pin);
+      localStorage.setItem('role', user.role || 'user');
+      document.cookie = `lilly_pin=${pin}; path=/; max-age=${60*60*24*30}; SameSite=Lax`;
+      console.log("[Login] Cookie gespeichert für PIN:", pin);
+
+      // Update userMainName under avatar
+      const userMainName = document.getElementById('userMainName');
+      if (userMainName && user.UserName) {
+        userMainName.textContent = user.UserName;
+      }
+      // Avatar SVG rendering
+      const avatarContainer = document.querySelector('#appMain div[style*="width:96px"]');
+      if (avatarContainer && user.user_profile_pic && profileSVGs[user.user_profile_pic]) {
+        avatarContainer.innerHTML = profileSVGs[user.user_profile_pic];
+      } else if (avatarContainer) {
+        avatarContainer.innerHTML = profileSVGs['avatar01'];
+      }
+
+      // UI umschalten
+      loginScreen.style.display = 'none';
+      // appHeader.style.display = 'block'; // removed header
+      appMain.classList.remove('hidden');
+
+      // Admin
+      if((user.role||'user') === 'admin'){ addAdminButton(); } else { const fab=document.querySelector('.edit-fab'); if(fab) fab.remove(); adminPanel.style.display='none'; }
+
+      // Daten laden
+      await loadCards(pin);
+      monitorPendingStatus();
+
+      // Realtime (Database)
+      let reloadTimeout;
+      supabase.channel('live-updates')
+        .on('postgres_changes', {event:'*', schema:'public', table:'Database'},
+          async (payload)=>{
+            if(reloadTimeout) clearTimeout(reloadTimeout);
+            reloadTimeout = setTimeout(async ()=>{
+              const currentPin = localStorage.getItem('id');
+              if(currentPin) await loadCards(currentPin);
+            }, 400);
+          })
+        .subscribe();
+    });
+
+    // Enter auf PIN
+    document.getElementById('pinInput').addEventListener('keydown', e=>{
+      if(e.key==='Enter'){ e.preventDefault(); document.getElementById('loginBtn').click(); }
+    });
+
+    // Begrüßungstext in der Sprechblase zufällig wählen
+    const greetings = [
+      "Schön, dich zu sehen!",
+      "Willkommen zurück!",
+      "Bereit für deinen Tag?",
+      "Hey, alles klar?",
+      "Los geht's!",
+      "Heute wird dein Tag!",
+      "Zeit für ein bisschen Magie!",
+      "Miau – du bist wieder da!",
+      "Deine Aufgaben warten schon!",
+      "Lilly ist stolz auf dich!"
+    ];
+    const bubble = document.getElementById('catSpeech');
+    if (bubble) {
+      bubble.textContent = greetings[Math.floor(Math.random() * greetings.length)];
+    }
+
   </script>
 </body>
 </html>
+
+  <style>
+  .scroll-gallery::-webkit-scrollbar { display:none; }
+  .scroll-gallery { scrollbar-width:none; }
+  .scroll-gallery-wrapper {
+    position: relative;
+    width: 100%;
+    max-width: var(--container);
+    overflow: hidden;
+  }
+  .scroll-btn-bar {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    margin-bottom: 6px;
+  }
+  .scroll-btn {
+    background: none;
+    border: none;
+    border-radius: 0;
+    width: 28px;
+    height: 28px;
+    color: var(--text);
+    opacity: 0.7;
+    cursor: pointer;
+    transition: opacity .2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+  }
+  .scroll-btn:hover { opacity: 1; }
+  @media (min-width: 720px) {
+    .scroll-btn-bar { display: none; }
+  }
+  </style>
+
+  <script>
+    // Scroll buttons for scroll-gallery
+    document.querySelectorAll('.scroll-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const gallery = document.querySelector('.scroll-gallery');
+        const scrollAmount = 200;
+        if (btn.classList.contains('left')) {
+          gallery.scrollBy({ left: -scrollAmount, behavior: 'smooth' });
+        } else {
+          gallery.scrollBy({ left: scrollAmount, behavior: 'smooth' });
+        }
+      });
+    });
+
+    // ---------- Erinnerungen Card Toggle ----------
+    // Track if notifications are currently being shown
+    function setupNotificationsToggle() {
+      const notificationsCard = document.getElementById('notificationsCard');
+      if (!notificationsCard) return;
+      notificationsCard.addEventListener('click', async () => {
+        if (_showingNotifications) return; // prevent multiple triggers
+        _showingNotifications = true;
+        // Dim other gallery elements
+        const cards = document.querySelectorAll('.scroll-gallery > div');
+        cards.forEach(c => c.style.opacity = (c === notificationsCard ? '1' : '0.5'));
+        await loadPendingCards();
+      });
+    }
+
+    // Lädt alle pending cards für den eingeloggten User und rendert sie
+    async function loadPendingCards() {
+      const pin = localStorage.getItem('id');
+      if (!pin) return;
+      let data, error;
+      const role = (localStorage.getItem('role') || 'user').toLowerCase();
+
+      try {
+        if (role === 'admin') {
+          ({ data, error } = await supabase
+            .from('Database')
+            .select('*')
+            .eq('status', 'declined'));
+        } else {
+          ({ data, error } = await supabase
+            .from('Database')
+            .select('*')
+            .ilike('id', `${pin}_%`)
+            .eq('status', 'pending'));
+
+          if (!data || data.length === 0) {
+            const res2 = await supabase
+              .from('Database')
+              .select('*')
+              .eq('connected_user_A', pin)
+              .eq('status', 'pending');
+            if (res2.data && res2.data.length > 0) {
+              data = res2.data;
+            }
+          }
+        }
+      } catch (err) { error = err; }
+
+      const sectionTitle = document.getElementById('futureSectionTitle');
+      const futureList = document.getElementById('futureList');
+      if (sectionTitle) sectionTitle.textContent = (role === 'admin') ? 'Erinnerungen' : 'Benachrichtigungen';
+      const backButton = document.getElementById('backButton');
+      if (backButton) backButton.style.display = 'inline';
+
+      if (futureList) {
+        futureList.innerHTML = '';
+        futureList.classList.add('fade-enter');
+
+        if (error) {
+          const msg = document.createElement('div');
+          msg.textContent = 'Fehler beim Laden.';
+          msg.style.color = 'var(--danger)';
+          msg.style.textAlign = 'center';
+          futureList.appendChild(msg);
+        } else {
+          // Nur Nachricht anzeigen, wenn wirklich keine Karten vorhanden sind
+          if (!data || data.length === 0) {
+            const msg = document.createElement('div');
+            msg.textContent = (role === 'admin') ? 'Keine abgelehnten Einträge.' : 'Keine Benachrichtigungen.';
+            msg.style.color = 'var(--muted)';
+            msg.style.textAlign = 'center';
+            msg.style.margin = '18px 0';
+            futureList.appendChild(msg);
+          } else {
+            const cards = await Promise.all(data.map(item => createFutureCard(item)));
+            cards.forEach(card => futureList.appendChild(card));
+          }
+        }
+
+        requestAnimationFrame(() => {
+          futureList.classList.add('fade-enter-active');
+        });
+        setTimeout(() => {
+          futureList.classList.remove('fade-enter');
+          futureList.classList.remove('fade-enter-active');
+        }, 500);
+      }
+
+      feather.replace();
+    }
+
+    // ---------- Notifications Toggle & Back Button Initialization ----------
+    document.addEventListener('DOMContentLoaded', () => {
+      setupNotificationsToggle();
+
+      const backButton = document.getElementById('backButton');
+      if (backButton) {
+        backButton.addEventListener('click', async () => {
+          _showingNotifications = false;
+          const sectionTitle = document.getElementById('futureSectionTitle');
+          const pin = localStorage.getItem('id');
+          if (sectionTitle) sectionTitle.textContent = 'In Zukunft';
+          backButton.style.display = 'none';
+          if (pin) await loadCards(pin);
+          // Reset all gallery card opacities to 1 with fade transition
+          const cards = document.querySelectorAll('.scroll-gallery > div');
+          cards.forEach(c => {
+            c.style.transition = 'opacity 0.5s ease';
+            c.style.opacity = '1';
+          });
+        });
+      }
+    });
+  </script>
