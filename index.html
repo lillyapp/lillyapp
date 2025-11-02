@@ -658,6 +658,47 @@
     })();
 
     // ---------- Karten-Renderer (Task-Stil) ----------
+
+    // ---------- SYNC Update Helper ----------
+    async function syncUpdateByRelation(relationId, updateData) {
+      let allSynced = false;
+      let attempts = 0;
+      const maxAttempts = 5;
+
+      while (!allSynced && attempts < maxAttempts) {
+        attempts++;
+
+        const { error } = await supabase
+          .from('Database')
+          .update(updateData)
+          .filter('relation_id', 'eq', String(relationId));
+
+        if (error) {
+          console.error(`[Sync] Fehler beim Update (Versuch ${attempts}):`, error);
+          continue;
+        }
+
+        const { data } = await supabase
+          .from('Database')
+          .select('id, datum, typ, bereich, beschreibung, status')
+          .filter('relation_id', 'eq', String(relationId));
+
+        if (
+          data.length > 1 &&
+          data.every((row) =>
+            Object.entries(updateData).every(([key, value]) => row[key] === value)
+          )
+        ) {
+          allSynced = true;
+          console.log(`[Sync] Alle Container mit relation_id ${relationId} synchronisiert.`);
+        } else {
+          console.warn(`[Sync] Versuch ${attempts}: Container noch nicht synchron, wiederhole...`);
+          await new Promise((resolve) => setTimeout(resolve, 500));
+        }
+      }
+
+      if (!allSynced) console.warn(`[Sync] Nach ${maxAttempts} Versuchen nicht vollständig synchronisiert.`);
+    }
     function createCard(item, roleParam){
       const role = roleParam || (localStorage.getItem('role') || 'user').toLowerCase();
       const tpl = document.getElementById('card-template');
@@ -700,10 +741,7 @@
             .single();
 
           if (relData && relData.relation_id) {
-            await supabase
-              .from('Database')
-              .update({ status: 'deleted' })
-              .filter('relation_id', 'eq', String(relData.relation_id));
+            await syncUpdateByRelation(relData.relation_id, { status: 'deleted' });
           } else {
             await supabase
               .from('Database')
@@ -731,10 +769,7 @@
 
       if (relData && relData.relation_id) {
         // Alle Container mit gleicher relation_id aktualisieren
-        await supabase
-          .from('Database')
-          .update({ status: newStatus })
-          .filter('relation_id', 'eq', String(relData.relation_id));
+        await syncUpdateByRelation(relData.relation_id, { status: newStatus });
       } else {
         // Fallback: nur diesen Container aktualisieren
         await supabase
@@ -1133,13 +1168,6 @@
         const opt=document.createElement('option'); opt.value=u.id; opt.textContent=`${u.UserName} (${u.id})`; sel.appendChild(opt);
       });
 
-      if(existing){
-        document.getElementById('datumInput').value = existing.datum || '';
-        document.getElementById('typInput').value = existing.typ || '';
-        document.getElementById('bereichInput').value = existing.bereich || '';
-        document.getElementById('beschreibungInput').value = existing.beschreibung || '';
-        document.getElementById('saveNew').dataset.editId = existing.id;
-      }
 
       const close = ()=>wrap.remove();
       document.getElementById('backdrop').onclick = close;
@@ -1165,9 +1193,7 @@
           // NEU: Nach Update relation_id holen und alle zugehörigen Einträge aktualisieren
           const { data: relData } = await supabase.from('Database').select('relation_id').eq('id', btn.dataset.editId).single();
           if (relData && relData.relation_id) {
-            await supabase.from('Database')
-              .update({ datum, typ, bereich, beschreibung, status: 'pending' })
-              .filter('relation_id', 'eq', String(relData.relation_id));
+            await syncUpdateByRelation(relData.relation_id, { datum, typ, bereich, beschreibung, status: 'pending' });
           }
         }else{
           const creatorPin = localStorage.getItem('id');
