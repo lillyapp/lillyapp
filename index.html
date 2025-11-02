@@ -1081,7 +1081,8 @@
       document.body.appendChild(wrap);
 
       const {data: users} = await supabase.from('Database').select('UserName,id').not('id','is',null);
-      const filtered = (users||[]).filter(u=>u.id && u.id.length===4);
+      const currentPin = localStorage.getItem('id');
+      const filtered = (users||[]).filter(u => u.id && u.id.length === 4 && u.id !== currentPin);
       const sel = document.getElementById('userSelect');
       ([...new Map(filtered.map(u=>[u.id,u])).values()]).forEach(u=>{
         const opt=document.createElement('option'); opt.value=u.id; opt.textContent=`${u.UserName} (${u.id})`; sel.appendChild(opt);
