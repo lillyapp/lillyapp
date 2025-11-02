@@ -1808,9 +1808,9 @@
 const logoutBtn = document.getElementById('logoutBtn');
 if (logoutBtn) {
   logoutBtn.addEventListener('click', () => {
-    console.log('[Logout] Button clicked – clearing storage and reloading...');
+    console.log('[Logout] Button clicked – clearing storage and redirecting...');
     localStorage.clear();
     document.cookie = 'lilly_pin=; path=/; expires=Thu, 01 Jan 1970 00:00:00 UTC; SameSite=Lax';
-    window.location.reload();
+    window.location.href = "https://lillyapp.github.io/lillyapp";
   });
 }
