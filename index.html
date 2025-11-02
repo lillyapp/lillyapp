@@ -338,8 +338,7 @@
   </style>
 </head>
 <body>
-    <!-- ========== LOGIN SCREEN ========== -->
-    
+
   <!-- ========== LOGIN SCREEN ========== -->
   <section id="loginScreen" aria-label="Login">
     <div class="login-wrap">
@@ -364,22 +363,6 @@
 
   <!-- ========== MAIN APP SCREEN (Redesign) ========== -->
   <main id="appMain" class="hidden" role="main" style="min-height:100dvh;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;background:var(--bg);padding-bottom:42px;position:relative;">
-    <!-- ========== TURORIAL SCREEN ========== -->
-    <section id="tutorialSection" style="display:none;flex-direction:column;align-items:center;gap:18px;margin-top:40px;">
-      <div style="display:flex;align-items:center;gap:20px;">
-        <button id="tutorialPrev" style="background:none;border:none;cursor:pointer;">
-          <i data-feather="chevron-left" style="width:28px;height:28px;color:#000;"></i>
-        </button>
-        <div id="tutorialAvatar" style="width:96px;height:96px;border-radius:50%;background:#f3f4f6;display:flex;align-items:center;justify-content:center;overflow:hidden;">
-          <img src="https://raw.githubusercontent.com/lillyapp/lillyapp/refs/heads/main/avatar01.png" alt="Avatar" style="width:84px;height:84px;object-fit:cover;">
-        </div>
-        <button id="tutorialNext" style="background:none;border:none;cursor:pointer;">
-          <i data-feather="chevron-right" style="width:28px;height:28px;color:#000;"></i>
-        </button>
-      </div>
-      <input id="tutorialName" type="text" placeholder="Wie heißt du?" style="border:none;outline:none;background:transparent;font-size:1.1rem;text-align:center;margin-top:10px;">
-      <button id="tutorialDone" class="btn-primary" style="background:#000;color:#fff;border:none;padding:12px 24px;border-radius:999px;cursor:pointer;">Fertig</button>
-    </section>
     <!-- Logout Button oben rechts -->
     <button id="logoutBtn" type="button" aria-label="Logout" style="position:absolute;right:18px;top:18px;background:transparent;border:none;cursor:pointer;z-index:50;padding:4px;">
       <i data-feather="log-out"></i>
@@ -568,104 +551,6 @@
 
   <!-- ========== SCRIPT / FUNKTIONEN ========== -->
   <script>
-      // ----- Tutorial -----
-      async function checkTutorialStatus(pin) {
-        try {
-          console.log("[Tutorial] Prüfe Status für PIN:", pin);
-          const { data, error } = await supabase.from('Database').select('tutorial_status').eq('id', pin).single();
-          if (error) {
-            console.warn("[Tutorial] Supabase-Fehler:", error.message);
-            return;
-          }
-          console.log("[Tutorial] Abgerufene Daten:", data);
-          const status = (data && data.tutorial_status) ? data.tutorial_status.toLowerCase() : null;
-          if (status === 'pending') {
-            console.log("[Tutorial] Status ist 'pending' – Tutorial wird angezeigt.");
-            if (typeof setupTutorial === 'function') {
-              setupTutorial(pin);
-            } else {
-              console.warn("[Tutorial] setupTutorial() ist nicht definiert.");
-            }
-          } else {
-            console.log("[Tutorial] Kein aktives Tutorial (Status:", status, ")");
-          }
-        } catch (err) {
-          console.error("[Tutorial] Fehler beim Prüfen des Status:", err);
-        }
-      }
-
-      // ----- Neues Tutorial-Setup -----
-      function setupTutorial(pin) {
-        console.log("[Tutorial] Starte Tutorial für PIN:", pin);
-        const avatars = Object.values(profileSVGs);
-        const keys = Object.keys(profileSVGs);
-        let current = 0;
-
-        const avatarDiv = document.getElementById('tutorialAvatar');
-        const input = document.getElementById('tutorialName');
-        const tutorialSection = document.getElementById('tutorialSection');
-        const appMain = document.getElementById('appMain');
-
-        // Rest der App ausblenden
-        Array.from(appMain.children).forEach(child => {
-          if (child.id !== 'tutorialSection') {
-            child.style.opacity = '0';
-            child.style.pointerEvents = 'none';
-          }
-        });
-        tutorialSection.style.display = 'flex';
-        tutorialSection.style.opacity = '1';
-
-        // Avatar initial anzeigen
-        function renderAvatar() {
-          avatarDiv.innerHTML = avatars[current];
-        }
-        renderAvatar();
-
-        // Navigation
-        document.getElementById('tutorialPrev').onclick = () => {
-          current = (current - 1 + avatars.length) % avatars.length;
-          renderAvatar();
-        };
-        document.getElementById('tutorialNext').onclick = () => {
-          current = (current + 1) % avatars.length;
-          renderAvatar();
-        };
-
-        // Fertig-Button
-        document.getElementById('tutorialDone').onclick = async () => {
-          const name = input.value.trim() || 'Neuer Benutzer';
-          const chosenAvatarKey = keys[current];
-          try {
-            await supabase.from('Database').update({
-              UserName: name,
-              user_profile_pic: chosenAvatarKey,
-              tutorial_status: 'ok'
-            }).eq('id', pin);
-            console.log("[Tutorial] Tutorial abgeschlossen und gespeichert.");
-          } catch (err) {
-            console.error("[Tutorial] Fehler beim Speichern:", err);
-          }
-
-          // Tutorial ausblenden
-          tutorialSection.style.display = 'none';
-
-          // Rest wieder anzeigen
-          Array.from(appMain.children).forEach(child => {
-            if (child.id !== 'tutorialSection') {
-              child.style.opacity = '1';
-              child.style.pointerEvents = 'auto';
-            }
-          });
-
-          // Avatar + Name direkt im Header aktualisieren
-          const userMainName = document.getElementById('userMainName');
-          if (userMainName) userMainName.textContent = name;
-          const avatarContainer = document.querySelector('#appMain div[style*="width:96px"]');
-          if (avatarContainer) avatarContainer.innerHTML = avatars[current];
-        };
-      }
-      
     // ----- Inline SVG Avatars -----
     const profileSVGs = {
       // 1: Dog
@@ -695,6 +580,7 @@
     // ---------- Auto-Login & Initialisierung ----------
     (async function initLillyApp() {
       feather.replace();
+
       // 1. Feather Icons ersetzt (bereits oben)
 
       // 2. Prüfen auf lilly_pin-Cookie
@@ -756,8 +642,6 @@
           // Notifications & Settings Toggle initialisieren (nur nach Login)
           setupNotificationsToggle();
           setupSettingsToggle();
-          // Tutorial-Status prüfen und ggf. Tutorial starten
-          // await checkTutorialStatus(savedPin); // Entfernt aus Auto-Login
         } else {
           // Kein gültiger User, Login anzeigen
           document.getElementById('loginScreen').style.display = 'block';
@@ -1292,9 +1176,6 @@
       loginScreen.style.display = 'none';
       // appHeader.style.display = 'block'; // removed header
       appMain.classList.remove('hidden');
-
-      // Nach Login: Tutorial-Status prüfen und ggf. Tutorial starten
-      await checkTutorialStatus(pin);
 
       // Admin
       if((user.role||'user') === 'admin'){ addAdminButton(); } else { const fab=document.querySelector('.edit-fab'); if(fab) fab.remove(); adminPanel.style.display='none'; }
