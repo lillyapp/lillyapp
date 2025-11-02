@@ -350,7 +350,11 @@
   <!-- Header removed per new design -->
 
   <!-- ========== MAIN APP SCREEN (Redesign) ========== -->
-  <main id="appMain" class="hidden" role="main" style="min-height:100dvh;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;background:var(--bg);padding-bottom:42px;">
+  <main id="appMain" class="hidden" role="main" style="min-height:100dvh;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;background:var(--bg);padding-bottom:42px;position:relative;">
+    <!-- Logout Button oben rechts -->
+    <button id="logoutBtn" type="button" aria-label="Logout" style="position:absolute;right:18px;top:18px;background:transparent;border:none;cursor:pointer;z-index:50;padding:4px;">
+      <i data-feather="log-out"></i>
+    </button>
     <!-- Avatar & Username -->
     <div style="display:flex;flex-direction:column;align-items:center;margin-top:36px;margin-bottom:32px;">
       <div style="width:96px;height:96px;border-radius:50%;background:#f3f4f6;display:flex;align-items:center;justify-content:center;overflow:hidden;">
@@ -545,77 +549,7 @@
       avatar03: `<img src="https://raw.githubusercontent.com/lillyapp/lillyapp/refs/heads/main/avatar03.png"style="width:100px; height:100px; position:center"/>`,
       // 4: Boy
       avatar04: `<img src="https://raw.githubusercontent.com/lillyapp/lillyapp/refs/heads/main/avatar04.png"style="width:100px; height:100px; position:center"/>`,
-      // 5: Robot
-      avatar05: `<svg viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg">
-        <circle cx="60" cy="60" r="58" fill="#E7F3F8"/>
-        <rect x="30" y="38" width="60" height="48" rx="18" fill="#B8E2F2"/>
-        <rect x="44" y="30" width="32" height="12" rx="6" fill="#B8E2F2"/>
-        <circle cx="44" cy="62" r="6" fill="#fff"/>
-        <circle cx="76" cy="62" r="6" fill="#fff"/>
-        <circle cx="44" cy="62" r="2.5" fill="#4B7C91"/>
-        <circle cx="76" cy="62" r="2.5" fill="#4B7C91"/>
-        <rect x="54" y="78" width="12" height="4" rx="2" fill="#91C1D8"/>
-      </svg>`,
-      // 6: Monkey
-      avatar06: `<svg viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg">
-        <circle cx="60" cy="60" r="58" fill="#FFF6E7"/>
-        <ellipse cx="60" cy="76" rx="30" ry="28" fill="#D6A87C"/>
-        <ellipse cx="38" cy="70" rx="9" ry="13" fill="#F8E0C7"/>
-        <ellipse cx="82" cy="70" rx="9" ry="13" fill="#F8E0C7"/>
-        <ellipse cx="60" cy="82" rx="16" ry="10" fill="#F8E0C7"/>
-        <ellipse cx="48" cy="74" rx="4.2" ry="5.8" fill="#fff"/>
-        <ellipse cx="72" cy="74" rx="4.2" ry="5.8" fill="#fff"/>
-        <ellipse cx="48" cy="74" rx="2.1" ry="2.7" fill="#8C6338"/>
-        <ellipse cx="72" cy="74" rx="2.1" ry="2.7" fill="#8C6338"/>
-        <ellipse cx="60" cy="88" rx="3.5" ry="2" fill="#D6A87C"/>
-      </svg>`,
-      // 7: Dark-skinned Boy
-      avatar07: `<svg viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg">
-        <circle cx="60" cy="60" r="58" fill="#F3E9E3"/>
-        <ellipse cx="60" cy="70" rx="30" ry="32" fill="#8B5C2B"/>
-        <ellipse cx="60" cy="48" rx="34" ry="19" fill="#4B2C09"/>
-        <ellipse cx="48" cy="74" rx="4.5" ry="6" fill="#fff"/>
-        <ellipse cx="72" cy="74" rx="4.5" ry="6" fill="#fff"/>
-        <ellipse cx="48" cy="74" rx="2.2" ry="2.8" fill="#442A12"/>
-        <ellipse cx="72" cy="74" rx="2.2" ry="2.8" fill="#442A12"/>
-        <ellipse cx="60" cy="84" rx="4" ry="2" fill="#8B5C2B"/>
-      </svg>`,
-      // 8: Owl
-      avatar08: `<svg viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg">
-        <circle cx="60" cy="60" r="58" fill="#F8F6FF"/>
-        <ellipse cx="60" cy="76" rx="30" ry="28" fill="#BDB2E2"/>
-        <ellipse cx="44" cy="70" rx="9" ry="13" fill="#fff"/>
-        <ellipse cx="76" cy="70" rx="9" ry="13" fill="#fff"/>
-        <ellipse cx="44" cy="70" rx="4.5" ry="6" fill="#BDB2E2"/>
-        <ellipse cx="76" cy="70" rx="4.5" ry="6" fill="#BDB2E2"/>
-        <ellipse cx="44" cy="70" rx="2" ry="2.5" fill="#6C6291"/>
-        <ellipse cx="76" cy="70" rx="2" ry="2.5" fill="#6C6291"/>
-        <polygon points="60,84 64,90 56,90" fill="#E8C46B"/>
-      </svg>`,
-      // 9: Alien
-      avatar09: `<svg viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg">
-        <circle cx="60" cy="60" r="58" fill="#E8FFF4"/>
-        <ellipse cx="60" cy="75" rx="30" ry="34" fill="#8FFFCF"/>
-        <ellipse cx="46" cy="75" rx="7" ry="13" fill="#5DC6A4"/>
-        <ellipse cx="74" cy="75" rx="7" ry="13" fill="#5DC6A4"/>
-        <ellipse cx="48" cy="74" rx="4.2" ry="5.8" fill="#fff"/>
-        <ellipse cx="72" cy="74" rx="4.2" ry="5.8" fill="#fff"/>
-        <ellipse cx="48" cy="74" rx="2.1" ry="2.7" fill="#2C8B6A"/>
-        <ellipse cx="72" cy="74" rx="2.1" ry="2.7" fill="#2C8B6A"/>
-        <ellipse cx="60" cy="88" rx="5" ry="2.5" fill="#5DC6A4"/>
-      </svg>`,
-      // 10: Red-haired Girl
-      avatar10: `<svg viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg">
-        <circle cx="60" cy="60" r="58" fill="#FFF5F0"/>
-        <ellipse cx="60" cy="70" rx="30" ry="32" fill="#FFD9B3"/>
-        <ellipse cx="60" cy="45" rx="35" ry="20" fill="#FF8B53"/>
-        <ellipse cx="60" cy="74" rx="19" ry="16" fill="#FFD9B3"/>
-        <ellipse cx="48" cy="70" rx="4.5" ry="6" fill="#fff"/>
-        <ellipse cx="72" cy="70" rx="4.5" ry="6" fill="#fff"/>
-        <ellipse cx="48" cy="70" rx="2.2" ry="2.8" fill="#B77C6A"/>
-        <ellipse cx="72" cy="70" rx="2.2" ry="2.8" fill="#B77C6A"/>
-        <ellipse cx="60" cy="84" rx="4" ry="2" fill="#FF8B53"/>
-      </svg>`
+      
     };
     const supabase = window.supabase.createClient(
       "https://uewrybgyaanhjoyqpmky.supabase.co",
@@ -1863,3 +1797,24 @@
       }
     });
   </script>
+
+    // ---------- Logout Button ----------
+    document.addEventListener('DOMContentLoaded', function() {
+      var logoutBtn = document.getElementById('logoutBtn');
+      if (logoutBtn) {
+        logoutBtn.addEventListener('click', function() {
+          // Cookie löschen
+          document.cookie = 'lilly_pin=; path=/; expires=Thu, 01 Jan 1970 00:00:00 UTC; SameSite=Lax';
+          // localStorage löschen (nur relevante Keys oder alles)
+          localStorage.removeItem('id');
+          localStorage.removeItem('role');
+          localStorage.removeItem('userColors');
+          // Optional: alles löschen
+          // localStorage.clear();
+          // Seite neu laden
+          window.location.reload();
+        });
+      }
+      // Feather-Icons nach DOMContentLoaded ersetzen
+      if (window.feather) feather.replace();
+    });
