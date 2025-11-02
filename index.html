@@ -43,6 +43,11 @@
       --container:980px;
     }
 
+    a, a:visited, a:hover, a:active {
+      color: #000;
+      text-decoration: none;
+    }
+
     *{box-sizing:border-box}
     html,body{
       margin:0; height:100%;
@@ -1803,14 +1808,10 @@
       var logoutBtn = document.getElementById('logoutBtn');
       if (logoutBtn) {
         logoutBtn.addEventListener('click', function() {
-          // Cookie löschen
+          // Alle localStorage-Einträge löschen
+          localStorage.clear();
+          // Cookie lilly_pin löschen
           document.cookie = 'lilly_pin=; path=/; expires=Thu, 01 Jan 1970 00:00:00 UTC; SameSite=Lax';
-          // localStorage löschen (nur relevante Keys oder alles)
-          localStorage.removeItem('id');
-          localStorage.removeItem('role');
-          localStorage.removeItem('userColors');
-          // Optional: alles löschen
-          // localStorage.clear();
           // Seite neu laden
           window.location.reload();
         });
