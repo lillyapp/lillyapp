@@ -663,6 +663,7 @@
     async function syncUpdateByRelation(relationId, updateData, originalId = null) {
       let attempts = 0;
       const maxAttempts = 5;
+      const currentPin = localStorage.getItem('id');
 
       while (attempts < maxAttempts) {
         attempts++;
@@ -675,12 +676,13 @@
             .eq('id', originalId);
         }
 
-        // 2. Andere Container mit derselben relation_id, aber anderer id holen
+        // 2. Andere Container mit derselben relation_id holen,
+        //    aber NICHT die Einträge, deren id die eigene PIN enthält
         const { data: others, error } = await supabase
           .from('Database')
           .select('id')
           .eq('relation_id', String(relationId))
-          .neq('id', originalId);
+          .not('id', 'ilike', `${currentPin}%`);
 
         if (error) {
           console.error(`[Sync] Fehler beim Abrufen verknüpfter Container:`, error);
@@ -2011,6 +2013,9 @@ document.addEventListener('DOMContentLoaded', () => {
     addBtn.addEventListener('click', () => {
       openAdminForm();
     });
+    addBtn.addEventListener('touchstart', () => {
+      openAdminForm();
+    });
   }
 });
 
@@ -2019,6 +2024,12 @@ const logoutBtn = document.getElementById('logoutBtn');
 if (logoutBtn) {
   logoutBtn.addEventListener('click', () => {
     console.log('[Logout] Button clicked – clearing storage and redirecting...');
+    localStorage.clear();
+    document.cookie = 'lilly_pin=; path=/; expires=Thu, 01 Jan 1970 00:00:00 UTC; SameSite=Lax';
+    window.location.href = "https://lillyapp.github.io/lillyapp";
+  });
+  logoutBtn.addEventListener('touchstart', () => {
+    console.log('[Logout] Button touched – clearing storage and redirecting...');
     localStorage.clear();
     document.cookie = 'lilly_pin=; path=/; expires=Thu, 01 Jan 1970 00:00:00 UTC; SameSite=Lax';
     window.location.href = "https://lillyapp.github.io/lillyapp";
