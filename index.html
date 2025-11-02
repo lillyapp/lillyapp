@@ -1257,6 +1257,267 @@
       });
     }
 
+    // ---------- Einstellungen Card Toggle ----------
+    function setupSettingsToggle() {
+      // Find the settings card (the one with SVG feather-settings icon)
+      const settingsCard = Array.from(document.querySelectorAll('.scroll-gallery > div')).find(card =>
+        card.querySelector('svg.feather-settings')
+      );
+      if (!settingsCard) {
+        console.warn("Settings-Card nicht gefunden");
+        return;
+      }
+
+      const futureList = document.getElementById('futureList');
+      const sectionTitle = document.getElementById('futureSectionTitle');
+      const backButton = document.getElementById('backButton');
+      let settingsMode = false;
+
+      // Utility: fade out all cards except settingsCard
+      function fadeGalleryCards() {
+        const cards = document.querySelectorAll('.scroll-gallery > div');
+        cards.forEach(c => c.style.opacity = (c === settingsCard ? '1' : '0.5'));
+      }
+      function resetGalleryCards() {
+        const cards = document.querySelectorAll('.scroll-gallery > div');
+        cards.forEach(c => {
+          c.style.transition = 'opacity 0.5s ease';
+          c.style.opacity = '1';
+        });
+      }
+
+      // Utility: clear settings view and restore main
+      async function exitSettingsMode() {
+        settingsMode = false;
+        if (sectionTitle) sectionTitle.textContent = 'In Zukunft';
+        if (backButton) backButton.style.display = 'none';
+        if (futureList) {
+          const pin = localStorage.getItem('id');
+          if (pin) await loadCards(pin);
+        }
+        resetGalleryCards();
+      }
+
+      // --- Name ändern ---
+      function renderNameChange(user) {
+        if (!futureList) return;
+        futureList.innerHTML = '';
+        const wrap = document.createElement('div');
+        wrap.style = 'display:flex;flex-direction:column;gap:18px;align-items:flex-start;padding-top:14px;';
+        const label = document.createElement('label');
+        label.textContent = 'Neuer Name';
+        label.style = 'font-weight:600;margin-bottom:4px;';
+        const input = document.createElement('input');
+        input.className = 'input';
+        input.type = 'text';
+        input.value = user.UserName || '';
+        input.maxLength = 30;
+        input.style = 'font-size:1rem;width:100%;margin-bottom:8px;';
+        const saveBtn = document.createElement('button');
+        saveBtn.className = 'btn-primary';
+        saveBtn.textContent = 'Speichern';
+        saveBtn.style = 'margin-top:4px;';
+        const statusMsg = document.createElement('div');
+        statusMsg.style = 'font-size:0.97rem;margin-top:8px;';
+        wrap.appendChild(label);
+        wrap.appendChild(input);
+        wrap.appendChild(saveBtn);
+        wrap.appendChild(statusMsg);
+        futureList.appendChild(wrap);
+        saveBtn.addEventListener('click', async () => {
+          const name = input.value.trim();
+          if (!name) {
+            statusMsg.textContent = 'Name darf nicht leer sein.';
+            statusMsg.style.color = 'var(--danger)';
+            return;
+          }
+          saveBtn.disabled = true;
+          const {error} = await supabase.from('Database').update({UserName: name}).eq('id', user.id);
+          if (!error) {
+            statusMsg.textContent = 'Gespeichert!';
+            statusMsg.style.color = 'var(--success)';
+            // Update name in UI
+            const userMainName = document.getElementById('userMainName');
+            if (userMainName) userMainName.textContent = name;
+            // Nach kurzer Verzögerung wieder das Einstellungsmenü anzeigen
+            setTimeout(() => renderSettingsMenu(user), 800);
+          } else {
+            statusMsg.textContent = 'Fehler beim Speichern.';
+            statusMsg.style.color = 'var(--danger)';
+          }
+          saveBtn.disabled = false;
+        });
+      }
+
+      // --- Avatar auswählen ---
+      function renderAvatarSelect(user) {
+        if (!futureList) return;
+        futureList.innerHTML = '';
+        const wrap = document.createElement('div');
+        wrap.style = 'display:flex;flex-direction:column;gap:20px;align-items:flex-start;padding-top:10px;';
+        const label = document.createElement('div');
+        label.textContent = 'Avatar auswählen';
+        label.style = 'font-weight:600;margin-bottom:6px;';
+        // Avatars grid
+        const grid = document.createElement('div');
+        grid.style = 'display:grid;grid-template-columns:repeat(5,54px);gap:14px;';
+        Object.entries(profileSVGs).forEach(([key, svg]) => {
+          const btn = document.createElement('button');
+          btn.style = 'background:none;border:2px solid #e5e7eb;border-radius:16px;padding:3px;width:54px;height:54px;cursor:pointer;transition:border-color .2s;';
+          btn.innerHTML = svg;
+          if (user.user_profile_pic === key) {
+            btn.style.borderColor = 'var(--accent)';
+            btn.style.boxShadow = '0 0 0 2px var(--accent)';
+          }
+          btn.addEventListener('click', async () => {
+            // Save to Supabase
+            const {error} = await supabase.from('Database').update({user_profile_pic: key}).eq('id', user.id);
+            if (!error) {
+              // Update avatar in UI
+              const avatarContainer = document.querySelector('#appMain div[style*="width:96px"]');
+              if (avatarContainer) avatarContainer.innerHTML = svg;
+              // Mark selected
+              Array.from(grid.children).forEach(b => b.style.borderColor = '#e5e7eb');
+              btn.style.borderColor = 'var(--accent)';
+              statusMsg.textContent = 'Avatar aktualisiert!';
+              statusMsg.style.color = 'var(--success)';
+              // Nach kurzer Verzögerung wieder das Einstellungsmenü anzeigen
+              setTimeout(() => renderSettingsMenu(user), 800);
+            } else {
+              statusMsg.textContent = 'Fehler beim Speichern.';
+              statusMsg.style.color = 'var(--danger)';
+            }
+          });
+          grid.appendChild(btn);
+        });
+        const statusMsg = document.createElement('div');
+        statusMsg.style = 'font-size:0.97rem;margin-top:10px;';
+        wrap.appendChild(label);
+        wrap.appendChild(grid);
+        wrap.appendChild(statusMsg);
+        futureList.appendChild(wrap);
+      }
+
+      // --- Konto löschen ---
+      function renderDeleteAccount(user) {
+        if (!futureList) return;
+        futureList.innerHTML = '';
+        const wrap = document.createElement('div');
+        wrap.style = 'display:flex;flex-direction:column;gap:18px;align-items:flex-start;padding-top:16px;';
+        const warn = document.createElement('div');
+        warn.textContent = 'Bist du sicher? Dein Konto wird unwiderruflich gelöscht.';
+        warn.style = 'color:var(--danger);font-weight:600;margin-bottom:8px;';
+        const delBtn = document.createElement('button');
+        delBtn.className = 'btn-primary';
+        delBtn.textContent = 'Konto löschen';
+        delBtn.style = 'background:var(--danger);border-color:var(--danger);color:#fff;';
+        const statusMsg = document.createElement('div');
+        statusMsg.style = 'font-size:0.97rem;margin-top:10px;';
+        wrap.appendChild(warn);
+        wrap.appendChild(delBtn);
+        wrap.appendChild(statusMsg);
+        futureList.appendChild(wrap);
+        delBtn.addEventListener('click', async () => {
+          if (!confirm('Willst du dein Konto wirklich löschen? Dies kann nicht rückgängig gemacht werden.')) return;
+          delBtn.disabled = true;
+          // Delete user from Supabase
+          const {error} = await supabase.from('Database').delete().eq('id', user.id);
+          if (!error) {
+            // Clear localStorage and redirect to login
+            localStorage.clear();
+            document.cookie = 'lilly_pin=; path=/; expires=Thu, 01 Jan 1970 00:00:00 UTC; SameSite=Lax';
+            statusMsg.textContent = 'Konto gelöscht. Du wirst abgemeldet...';
+            statusMsg.style.color = 'var(--success)';
+            setTimeout(() => {
+              window.location.reload();
+            }, 1200);
+          } else {
+            statusMsg.textContent = 'Fehler beim Löschen.';
+            statusMsg.style.color = 'var(--danger)';
+            delBtn.disabled = false;
+          }
+        });
+      }
+
+      // Main settings menu
+      function renderSettingsMenu(user) {
+        if (!futureList) return;
+        futureList.innerHTML = '';
+        const wrap = document.createElement('div');
+        wrap.style = 'display:flex;flex-direction:column;gap:22px;align-items:flex-start;padding-top:10px;';
+        // Option: Name ändern
+        const nameBtn = document.createElement('button');
+        nameBtn.className = 'chip-btn';
+        nameBtn.textContent = 'Name ändern';
+        nameBtn.style = 'font-size:1.08rem;font-weight:600;';
+        nameBtn.addEventListener('click', () => renderNameChange(user));
+        // Option: Avatar auswählen
+        const avatarBtn = document.createElement('button');
+        avatarBtn.className = 'chip-btn';
+        avatarBtn.textContent = 'Avatar auswählen';
+        avatarBtn.style = 'font-size:1.08rem;font-weight:600;';
+        avatarBtn.addEventListener('click', () => renderAvatarSelect(user));
+        // Option: Konto löschen
+        const delBtn = document.createElement('button');
+        delBtn.className = 'chip-btn';
+        delBtn.textContent = 'Konto löschen';
+        delBtn.style = 'font-size:1.08rem;font-weight:600;color:var(--danger);';
+        delBtn.addEventListener('click', () => renderDeleteAccount(user));
+        wrap.appendChild(nameBtn);
+        wrap.appendChild(avatarBtn);
+        wrap.appendChild(delBtn);
+        // Option: Konto hinzufügen (nur für Admin)
+        const role = (localStorage.getItem('role') || 'user').toLowerCase();
+        if (role === 'admin') {
+          const addBtn = document.createElement('button');
+          addBtn.className = 'chip-btn';
+          addBtn.textContent = 'Konto hinzufügen';
+          addBtn.style = 'font-size:1.08rem;font-weight:600;color:var(--accent);';
+          addBtn.addEventListener('click', async () => {
+            const newId = Math.floor(1000 + Math.random() * 9000).toString();
+            const newName = prompt('Bitte gib einen Namen für das neue Konto ein:', 'Neuer Benutzer');
+            if (!newName) {
+              alert('Vorgang abgebrochen – kein Name angegeben.');
+              return;
+            }
+            const { error } = await supabase.from('Database').insert([{ id: newId, UserName: newName.trim(), role: 'user' }]);
+            if (!error) {
+              alert(`Neues Konto erstellt:\nID: ${newId}\nName: ${newName}`);
+            } else {
+              alert('Fehler beim Erstellen des neuen Kontos.');
+            }
+          });
+          wrap.appendChild(addBtn);
+        }
+        futureList.appendChild(wrap);
+      }
+
+      settingsCard.addEventListener('click', async () => {
+        if (settingsMode) return;
+        settingsMode = true;
+        fadeGalleryCards();
+        if (sectionTitle) sectionTitle.textContent = 'Was möchtest du ändern?';
+        if (backButton) backButton.style.display = 'inline';
+        // Load user data
+        const pin = localStorage.getItem('id');
+        if (!pin) return;
+        const {data, error} = await supabase.from('Database').select('*').eq('id', pin).single();
+        if (error || !data) {
+          if (futureList) futureList.innerHTML = '<div style="color:var(--danger);margin-top:14px;">Fehler beim Laden der Einstellungen.</div>';
+          return;
+        }
+        renderSettingsMenu(data);
+      });
+
+      // Back button returns from settings
+      if (backButton) {
+        backButton.addEventListener('click', async () => {
+          if (!settingsMode) return;
+          await exitSettingsMode();
+        });
+      }
+    }
+
     // Lädt alle pending cards für den eingeloggten User und rendert sie
     async function loadPendingCards() {
       const pin = localStorage.getItem('id');
@@ -1333,9 +1594,10 @@
       feather.replace();
     }
 
-    // ---------- Notifications Toggle & Back Button Initialization ----------
+    // ---------- Notifications & Settings Toggle & Back Button Initialization ----------
     document.addEventListener('DOMContentLoaded', () => {
       setupNotificationsToggle();
+      setupSettingsToggle();
 
       const backButton = document.getElementById('backButton');
       if (backButton) {
