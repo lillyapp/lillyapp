@@ -1176,7 +1176,7 @@
           if (cData && cData.UserName) creatorName = cData.UserName;
 
           // Generiere gemeinsame relation_id
-          const relationId = Math.floor(100000 + Math.random() * 900000).toString();
+          const relationId = String(Math.floor(100000 + Math.random() * 900000));
 
           // Generiere zufälligen Suffix für IDs
           const randomPart = Math.floor(100000 + Math.random() * 900000);
