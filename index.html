@@ -1803,19 +1803,14 @@
     });
   </script>
 
-    // ---------- Logout Button ----------
-    document.addEventListener('DOMContentLoaded', function() {
-      var logoutBtn = document.getElementById('logoutBtn');
-      if (logoutBtn) {
-        logoutBtn.addEventListener('click', function() {
-          // Alle localStorage-Einträge löschen
-          localStorage.clear();
-          // Cookie lilly_pin löschen
-          document.cookie = 'lilly_pin=; path=/; expires=Thu, 01 Jan 1970 00:00:00 UTC; SameSite=Lax';
-          // Seite neu laden
-          window.location.reload();
-        });
-      }
-      // Feather-Icons nach DOMContentLoaded ersetzen
-      if (window.feather) feather.replace();
-    });
+
+// ---------- Logout Button ----------
+const logoutBtn = document.getElementById('logoutBtn');
+if (logoutBtn) {
+  logoutBtn.addEventListener('click', () => {
+    console.log('[Logout] Button clicked – clearing storage and reloading...');
+    localStorage.clear();
+    document.cookie = 'lilly_pin=; path=/; expires=Thu, 01 Jan 1970 00:00:00 UTC; SameSite=Lax';
+    window.location.reload();
+  });
+}
