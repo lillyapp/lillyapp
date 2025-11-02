@@ -348,7 +348,7 @@
         <div class="speech-bubble" id="catSpeech">Willkommen zurück!</div>
       </div>
       <form class="login-form" onsubmit="return false;">
-        <h1 class="login-title">V1 Hallo! Schön, dass du da bist.</h1>
+        <h1 class="login-title">V2 Hallo! Schön, dass du da bist.</h1>
 
         <!-- Wir bleiben bei 4-stelliger PIN, stilistisch aber wie E-Mail-Feld -->
         <input id="pinInput" class="input" type="password" inputmode="numeric" maxlength="4" placeholder="4-stellige PIN" autocomplete="one-time-code" />
@@ -661,14 +661,14 @@
 
     // ---------- SYNC Update Helper ----------
     async function syncUpdateByRelation(relationId, updateData, originalId = null) {
+      const currentPin = localStorage.getItem('id');
       let attempts = 0;
       const maxAttempts = 5;
-      const currentPin = localStorage.getItem('id');
 
       while (attempts < maxAttempts) {
         attempts++;
 
-        // 1. Eigenes Element zuerst aktualisieren
+        // 1. Eigenes Element aktualisieren (optional, wenn originalId vorhanden)
         if (originalId) {
           await supabase
             .from('Database')
@@ -676,37 +676,29 @@
             .eq('id', originalId);
         }
 
-        // 2. Andere Container mit derselben relation_id holen,
-        //    aber NICHT die Einträge, deren id die eigene PIN enthält
-        const { data: others, error } = await supabase
+        // 2. Alle anderen Container mit derselben relation_id aktualisieren,
+        //    außer denen, deren ID mit der eigenen PIN beginnt
+        const { error: updateError } = await supabase
           .from('Database')
-          .select('id')
+          .update(updateData)
           .eq('relation_id', String(relationId))
           .not('id', 'ilike', `${currentPin}%`);
 
-        if (error) {
-          console.error(`[Sync] Fehler beim Abrufen verknüpfter Container:`, error);
+        if (updateError) {
+          console.error(`[Sync] Fehler beim Aktualisieren verknüpfter Container:`, updateError);
           break;
         }
 
-        if (!others || others.length === 0) {
-          console.warn(`[Sync] Keine weiteren Container mit relation_id ${relationId} gefunden.`);
-          break;
-        }
-
-        // 3. Diese Container aktualisieren
-        for (const other of others) {
-          await supabase
-            .from('Database')
-            .update(updateData)
-            .eq('id', other.id);
-        }
-
-        // 4. Kontrolle: sind alle synchron?
-        const { data: check } = await supabase
+        // 3. Kontrolle: sind alle synchron?
+        const { data: check, error: checkError } = await supabase
           .from('Database')
           .select('id, datum, typ, bereich, beschreibung, status')
           .eq('relation_id', String(relationId));
+
+        if (checkError) {
+          console.error(`[Sync] Fehler bei Kontrollabfrage:`, checkError);
+          break;
+        }
 
         const allSynced = check.every((row) =>
           Object.entries(updateData).every(([key, value]) => row[key] === value)
