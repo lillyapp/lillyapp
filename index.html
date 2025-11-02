@@ -660,49 +660,66 @@
     // ---------- Karten-Renderer (Task-Stil) ----------
 
     // ---------- SYNC Update Helper ----------
-    async function syncUpdateByRelation(relationId, updateData) {
-      let allSynced = false;
+    async function syncUpdateByRelation(relationId, updateData, originalId = null) {
       let attempts = 0;
       const maxAttempts = 5;
 
-      while (!allSynced && attempts < maxAttempts) {
+      while (attempts < maxAttempts) {
         attempts++;
 
-        const { error } = await supabase
+        // 1. Eigenes Element zuerst aktualisieren
+        if (originalId) {
+          await supabase
+            .from('Database')
+            .update(updateData)
+            .eq('id', originalId);
+        }
+
+        // 2. Andere Container mit derselben relation_id, aber anderer id holen
+        const { data: others, error } = await supabase
           .from('Database')
-          .update(updateData)
-          .filter('relation_id', 'eq', String(relationId));
+          .select('id')
+          .eq('relation_id', String(relationId))
+          .neq('id', originalId);
 
         if (error) {
-          console.error(`[Sync] Fehler beim Update (Versuch ${attempts}):`, error);
-          continue;
+          console.error(`[Sync] Fehler beim Abrufen verknüpfter Container:`, error);
+          break;
         }
 
-        const { data } = await supabase
+        if (!others || others.length === 0) {
+          console.warn(`[Sync] Keine weiteren Container mit relation_id ${relationId} gefunden.`);
+          break;
+        }
+
+        // 3. Diese Container aktualisieren
+        for (const other of others) {
+          await supabase
+            .from('Database')
+            .update(updateData)
+            .eq('id', other.id);
+        }
+
+        // 4. Kontrolle: sind alle synchron?
+        const { data: check } = await supabase
           .from('Database')
           .select('id, datum, typ, bereich, beschreibung, status')
-          .filter('relation_id', 'eq', String(relationId));
+          .eq('relation_id', String(relationId));
 
-        if (data.length > 0) {
-          const changedIds = data.map((row) => row.id).join(', ');
-          alert(`Folgende Container wurden synchronisiert:\n${changedIds}`);
-        }
+        const allSynced = check.every((row) =>
+          Object.entries(updateData).every(([key, value]) => row[key] === value)
+        );
 
-        if (
-          data.length > 1 &&
-          data.every((row) =>
-            Object.entries(updateData).every(([key, value]) => row[key] === value)
-          )
-        ) {
-          allSynced = true;
+        const ids = check.map((r) => r.id).join(', ');
+        alert(`Synchronisiert (Versuch ${attempts}): ${ids}`);
+
+        if (allSynced) {
           console.log(`[Sync] Alle Container mit relation_id ${relationId} synchronisiert.`);
-        } else {
-          console.warn(`[Sync] Versuch ${attempts}: Container noch nicht synchron, wiederhole...`);
-          await new Promise((resolve) => setTimeout(resolve, 500));
+          break;
         }
-      }
 
-      if (!allSynced) console.warn(`[Sync] Nach ${maxAttempts} Versuchen nicht vollständig synchronisiert.`);
+        await new Promise((r) => setTimeout(r, 300));
+      }
     }
     function createCard(item, roleParam){
       const role = roleParam || (localStorage.getItem('role') || 'user').toLowerCase();
@@ -1974,6 +1991,15 @@
           });
         });
       }
+      // Debug: Anzeigen, welche Elemente verändert wurden
+      document.addEventListener('updateComplete', (event) => {
+        const { changedElements } = event.detail || {};
+        if (Array.isArray(changedElements) && changedElements.length > 0) {
+          alert(`Folgende Elemente wurden aktualisiert:\n${changedElements.join(', ')}`);
+        } else {
+          alert('Keine geänderten Elemente gefunden.');
+        }
+      });
     });
  
  
