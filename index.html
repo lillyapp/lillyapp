@@ -477,15 +477,6 @@
           <div class="fill" style="height:100%;width:0%;background:#f59e0b;border-radius:8px;"></div>
         </div>
       </div>
-      <div id="skillPrivacyNotice" style="display:none;position:relative;background:#f3f4f6;border-radius:12px;padding:16px;margin-top:14px;color:var(--text);animation:rippleExpand 0.4s ease forwards;">
-        <h3 style="margin:0 0 6px;font-size:1.1rem;font-weight:700;">DSGVO</h3>
-        <p style="margin:0 0 12px;color:var(--muted);line-height:1.5;font-size:0.95rem;">
-          Du musst den Datenschutzbestimmungen zustimmen, um den Kompetenzbereich freizuschalten.
-        </p>
-        <button id="acceptDSGVO" style="border:none;border-radius:999px;background:#000;color:#fff;font-weight:700;padding:10px 18px;cursor:pointer;transition:transform .12s ease;">
-          Akzeptieren
-        </button>
-      </div>
       <div id="skillDetail" style="display:none;position:relative;background:#f3f4f6;border-radius:12px;padding:16px;margin-top:14px;">
         <div id="skillTriangle" style="position:absolute;top:-10px;left:0;transform:translateX(0);width:0;height:0;border-left:10px solid transparent;border-right:10px solid transparent;border-bottom:10px solid #f3f4f6;"></div>
         <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;">
@@ -1778,49 +1769,6 @@ if (logoutBtn) {
         const skillTitle = document.getElementById("skillTitle");
         const skillText = document.getElementById("skillText");
         const bars = document.querySelectorAll(".skill-bar");
-        // Datenschutzprüfung
-        let acceptedDSGVO = false;
-        (async function checkDSGVO(){
-          const userId = localStorage.getItem("id");
-          if (!userId) return;
-          try {
-            const { data, error } = await supabase
-              .from("Database")
-              .select("accepted_dsgvo")
-              .eq("id", userId)
-              .single();
-            if (!error && data) {
-              acceptedDSGVO = data.accepted_dsgvo === true;
-            }
-          } catch (e) {
-            console.warn("[SkillMeter] DSGVO-Prüfung fehlgeschlagen:", e);
-          }
-        })();
-        // DSGVO-Akzeptieren-Button
-        document.addEventListener("click", async (e) => {
-          if (e.target && e.target.id === "acceptDSGVO") {
-            const userId = localStorage.getItem("id");
-            if (!userId) return;
-            try {
-              const { error } = await supabase
-                .from("Database")
-                .update({ accepted_dsgvo: true })
-                .eq("id", userId);
-              if (!error) {
-                acceptedDSGVO = true;
-                const notice = document.getElementById("skillPrivacyNotice");
-                if (notice) {
-                  notice.style.animation = "rippleClose 0.3s ease forwards";
-                  setTimeout(() => (notice.style.display = "none"), 250);
-                }
-              } else {
-                console.warn("[SkillMeter] Fehler beim Speichern der DSGVO-Zustimmung:", error);
-              }
-            } catch (err) {
-              console.error("[SkillMeter] DSGVO-Update fehlgeschlagen:", err);
-            }
-          }
-        });
         const userColors = JSON.parse(localStorage.getItem("userColors") || "{}");
 
         if (userColors && Object.keys(userColors).length) {
@@ -1836,21 +1784,12 @@ if (logoutBtn) {
 
         // --- Flow einmalig abrufen und cachen ---
         async function loadSkillData() {
-          // DSGVO-Prüfung
-          const userId = localStorage.getItem("id");
-          if (!userId) throw new Error("Keine Benutzer-ID gefunden.");
-          const { data: dsgvoData } = await supabase
-            .from("Database")
-            .select("accepted_dsgvo")
-            .eq("id", userId)
-            .single();
-          if (!dsgvoData || dsgvoData.accepted_dsgvo !== true) {
-            console.warn("[SkillMeter] DSGVO nicht akzeptiert – Flow wird nicht ausgeführt.");
-            return {};
-          }
           if (skillDataLoaded && skillData) return skillData;
 
           try {
+            const userId = localStorage.getItem("id");
+            if (!userId) throw new Error("Keine Benutzer-ID gefunden.");
+
             let mhdName = "Unbekannt";
             let userName = "Unbekannt";
             try {
@@ -1902,20 +1841,6 @@ if (logoutBtn) {
 
         // --- Detail-Bubble anzeigen ---
         function showSkillDetail(skillKey) {
-          // Prüfen, ob DSGVO akzeptiert wurde
-          if (!acceptedDSGVO) {
-            const privacyNotice = document.getElementById("skillPrivacyNotice");
-            if (privacyNotice) {
-              privacyNotice.style.display = "block";
-              privacyNotice.scrollIntoView({ behavior: "smooth", block: "center" });
-            }
-            skillDetail.style.display = "none";
-            activeSkill = null;
-            return;
-          } else {
-            const privacyNotice = document.getElementById("skillPrivacyNotice");
-            if (privacyNotice) privacyNotice.style.display = "none";
-          }
           if (!skillDataLoaded) {
             loadSkillData().then(() => showSkillDetail(skillKey));
             return;
@@ -1927,9 +1852,8 @@ if (logoutBtn) {
           }
 
           // Toggle: gleiche Bubble wieder schließen
-          if (activeSkill === skillKey && skillDetail.style.display === "block") {
+          if (activeSkill === skillKey) {
             skillDetail.style.opacity = "0";
-            skillDetail.style.transition = "opacity 0.3s ease";
             setTimeout(() => {
               skillDetail.style.display = "none";
               activeSkill = null;
