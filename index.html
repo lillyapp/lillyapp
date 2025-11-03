@@ -1927,8 +1927,9 @@ if (logoutBtn) {
           }
 
           // Toggle: gleiche Bubble wieder schließen
-          if (activeSkill === skillKey) {
+          if (activeSkill === skillKey && skillDetail.style.display === "block") {
             skillDetail.style.opacity = "0";
+            skillDetail.style.transition = "opacity 0.3s ease";
             setTimeout(() => {
               skillDetail.style.display = "none";
               activeSkill = null;
