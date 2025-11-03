@@ -557,18 +557,22 @@
       
       async function fetchContainerExplanation(item) {
         try {
-          const response = await fetch("https://default7a0df6a535c94bdcae489c981a4d55.59.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/3bee0f15b43e4ac19b3b404254439485/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=vOU4h2a-y-UI36FgHwFafyaMWP2tFGV6Pbjw8_Ij8bo", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              skill: item.typ || item.bereich || "allgemein",
-              description: item.beschreibung || ""
-            })
-          });
+          const response = await fetch(
+            "https://default7a0df6a535c94bdcae489c981a4d55.59.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/3bee0f15b43e4ac19b3b404254439485/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=vOU4h2a-y-UI36FgHwFafyaMWP2tFGV6Pbjw8_Ij8bo",
+            {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                skill: item.typ || item.bereich || "allgemein",
+                description: item.beschreibung || "",
+                mhd_name: item.MHD_database_Name || "unbekannt"
+              })
+            }
+          );
+
           if (!response.ok) throw new Error(`HTTP ${response.status}`);
           const result = await response.json();
 
-          // Prüfe beide möglichen Felder und gib nur den Text zurück
           if (typeof result.text === "string") return result.text;
           if (typeof result.response === "string") return result.response;
 
@@ -1292,225 +1296,7 @@
   <script>
     // SkillMeter JS
 
-    // --- SkillMeter: Fetch Explanation Function ---
-    async function fetchExplanation(skillKey) {
-      try {
-        const response = await fetch("https://default7a0df6a535c94bdcae489c981a4d55.59.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/3bee0f15b43e4ac19b3b404254439485/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=vOU4h2a-y-UI36FgHwFafyaMWP2tFGV6Pbjw8_Ij8bo", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json"
-          },
-          body: JSON.stringify({ skill: skillKey })
-        });
-        if (!response.ok) throw new Error(`HTTP-Fehler: ${response.status}`);
-        const result = await response.json();
-        return result.text || JSON.stringify(result);
-      } catch (err) {
-        console.error("Fehler beim Abrufen der Erklärung:", err);
-        return "Beim Laden der Erklärung ist ein Fehler aufgetreten.";
-      }
-    }
-
-    document.addEventListener('DOMContentLoaded', async () => {
-      const bars = document.querySelectorAll('#skillMeter .skill-bar .fill');
-      // Set transition property for animation
-      bars.forEach(bar => {
-        bar.style.transition = 'width 1s ease-out';
-        bar.style.width = '0%';
-      });
-
-      // Farben aus Supabase holen & in localStorage speichern
-      let userColors = {};
-      const userId = localStorage.getItem('id');
-      if (userId) {
-        try {
-          // Farben aus Supabase laden
-          const { data, error } = await supabase
-            .from('Database')
-            .select('color_f, color_p, color_s')
-            .eq('id', userId)
-            .single();
-          userColors = {
-            fach: (data && data.color_f) || '#3A6FF8',
-            pers: (data && data.color_p) || '#16a34a',
-            sozial: (data && data.color_s) || '#f59e0b'
-          };
-          // In localStorage speichern
-          localStorage.setItem('userColors', JSON.stringify(userColors));
-        } catch (err) {
-          userColors = {
-            fach: '#3A6FF8',
-            pers: '#16a34a',
-            sozial: '#f59e0b'
-          };
-        }
-      } else {
-        // Try localStorage fallback
-        try {
-          const stored = JSON.parse(localStorage.getItem('userColors') || '{}');
-          userColors = {
-            fach: stored.fach || '#3A6FF8',
-            pers: stored.pers || '#16a34a',
-            sozial: stored.sozial || '#f59e0b'
-          };
-        } catch {
-          userColors = {
-            fach: '#3A6FF8',
-            pers: '#16a34a',
-            sozial: '#f59e0b'
-          };
-        }
-      }
-
-      // Apply user colors to the bars immediately before any animation
-      bars.forEach(bar => {
-        // Determine skill type by parent .skill-bar's data-skill
-        const skillBar = bar.parentElement && bar.parentElement.dataset ? bar.parentElement.dataset.skill : null;
-        if (skillBar === 'fach') bar.style.background = userColors.fach || '#3A6FF8';
-        if (skillBar === 'pers') bar.style.background = userColors.pers || '#16a34a';
-        if (skillBar === 'sozial') bar.style.background = userColors.sozial || '#f59e0b';
-      });
-
-      // Animate bars from 0% to calculated width after a short delay
-      setTimeout(() => {
-        bars.forEach(bar => {
-          const level = Math.floor(Math.random() * 4) + 1;
-          const width = level * 25;
-          bar.style.width = width + '%';
-        });
-      }, 80);
-
-      // --- Skill Detail logic ---
-      const skillDetail = document.getElementById('skillDetail');
-      const skillTitle = document.getElementById('skillTitle');
-      const skillText = document.getElementById('skillText');
-      const triangle = skillDetail.querySelector('.triangle');
-
-      const skillMap = {
-        fach: 'Fachkompetenz',
-        pers: 'Persönlichkeitskompetenz',
-        sozial: 'Sozialkompetenz'
-      };
-
-      document.querySelectorAll('#skillMeter .skill-bar').forEach((bar, index) => {
-        bar.addEventListener('click', async (e) => {
-          const key = bar.dataset.skill;
-          const isVisible = skillDetail.style.display === 'block';
-
-          if (isVisible && skillTitle.textContent === skillMap[key]) {
-            skillDetail.classList.remove('ripple-open');
-            skillDetail.classList.add('ripple-close');
-            setTimeout(() => {
-              skillDetail.style.display = 'none';
-              skillDetail.classList.remove('ripple-close');
-              // Shift future section back up
-              const futureSection = document.querySelector('.app-section');
-              if (futureSection) {
-                futureSection.classList.remove('active');
-              }
-            }, 280);
-            return;
-          }
-
-          const rect = bar.getBoundingClientRect();
-          const parentRect = bar.parentElement.getBoundingClientRect();
-          const centerX = rect.left - parentRect.left + rect.width / 2;
-          triangle.style.left = `${centerX}px`;
-
-          skillTitle.textContent = skillMap[key] || 'Kompetenz';
-          const explanation = await fetchExplanation(key);
-          skillText.textContent = explanation;
-
-          // Set circle color according to skill and userColors
-          const colorMap = {
-            fach: userColors.fach || '#3A6FF8',
-            pers: userColors.pers || '#16a34a',
-            sozial: userColors.sozial || '#f59e0b'
-          };
-          const circle = document.getElementById('skillColorCircle');
-          if (circle) {
-            circle.style.background = colorMap[key];
-          }
-          // Update the corresponding bar (.fill) color as well
-          const barFill = bar.querySelector('.fill');
-          if (barFill) barFill.style.background = colorMap[key];
-
-          skillDetail.style.display = 'block';
-          // Shift future section down
-          const futureSection = document.querySelector('.app-section');
-          if (futureSection) {
-            futureSection.classList.add('shift-down', 'active');
-          }
-          skillDetail.classList.remove('ripple-close');
-          skillDetail.classList.add('ripple-open');
-          feather.replace();
-        });
-      });
-
-      // ========== Color Palette Feature ==========
-      const colorCircle = document.getElementById('skillColorCircle');
-      const colorPalette = document.getElementById('colorPalette');
-      let activeSkill = null;
-
-      // Toggle color palette when clicking on main circle
-      colorCircle.addEventListener('click', (e) => {
-        e.stopPropagation();
-        colorPalette.style.display = (colorPalette.style.display === 'flex') ? 'none' : 'flex';
-      });
-
-      // Hide palette when clicking elsewhere
-      document.addEventListener('click', (e) => {
-        if (!colorPalette.contains(e.target) && e.target !== colorCircle) {
-          colorPalette.style.display = 'none';
-        }
-      });
-
-      // Apply new color when selecting a color option
-      colorPalette.querySelectorAll('.color-option').forEach(opt => {
-        opt.addEventListener('click', async () => {
-          const newColor = opt.dataset.color;
-          if (!activeSkill) return;
-
-          // Update circle and bar color
-          colorCircle.style.background = newColor;
-          const bar = document.querySelector(`.skill-bar[data-skill="${activeSkill}"] .fill`);
-          if (bar) bar.style.background = newColor;
-
-          // Update local storage
-          const userColors = JSON.parse(localStorage.getItem('userColors') || '{}');
-          userColors[activeSkill] = newColor;
-          localStorage.setItem('userColors', JSON.stringify(userColors));
-
-          // Speichern in Supabase
-          const userId = localStorage.getItem('id');
-          if (userId) {
-            const columnMap = {
-              fach: 'color_f',
-              pers: 'color_p',
-              sozial: 'color_s'
-            };
-            const column = columnMap[activeSkill];
-            if (column) {
-              const { error } = await supabase
-                .from('Database')
-                .update({ [column]: newColor })
-                .eq('id', userId);
-              if (error) console.error('Fehler beim Speichern der Farbe:', error);
-            }
-          }
-
-          colorPalette.style.display = 'none';
-        });
-      });
-
-      // Track which skill is currently active
-      document.querySelectorAll('#skillMeter .skill-bar').forEach(bar => {
-        bar.addEventListener('click', () => {
-          activeSkill = bar.dataset.skill;
-        });
-      });
-      // ========== End Color Palette Feature ==========
-    });
+    
   </script>
 </body>
 </html>
@@ -1968,3 +1754,145 @@ if (logoutBtn) {
   });
 }
       </script>
+
+<script>
+      // SkillMeter JS
+      document.addEventListener("DOMContentLoaded", () => {
+        const skillDetail = document.getElementById("skillDetail");
+        const skillTitle = document.getElementById("skillTitle");
+        const skillText = document.getElementById("skillText");
+        const bars = document.querySelectorAll(".skill-bar");
+        const userColors = JSON.parse(localStorage.getItem("userColors") || "{}");
+
+        let skillData = null;
+        let skillDataLoaded = false; // Flow wird nur einmal ausgeführt
+        let activeSkill = null;
+
+        // --- Flow einmalig abrufen und cachen ---
+        async function loadSkillData() {
+          if (skillDataLoaded && skillData) return skillData;
+
+          try {
+            const userId = localStorage.getItem("id");
+            if (!userId) throw new Error("Keine Benutzer-ID gefunden.");
+
+            let mhdName = "Unbekannt";
+            let userName = "Unbekannt";
+            try {
+              const { data } = await supabase
+                .from("Database")
+                .select("MHD_database_Name, UserName")
+                .eq("id", userId)
+                .single();
+              if (data) {
+                mhdName = data.MHD_database_Name || "Unbekannt";
+                userName = data.UserName || "Unbekannt";
+              }
+            } catch (err) {
+              console.warn("[SkillMeter] DB-Fehler:", err);
+            }
+
+            const response = await fetch(
+              "https://default7a0df6a535c94bdcae489c981a4d55.59.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/e3a8767d945943579c1853704e2507f0/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=GnQpKMIOD_FvpvtSr2aEMAWZ4xG2Qm0zXHsmOkAQc-o",
+              {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  MHD_database_Name: String(mhdName),
+                  UserName: String(userName),
+                }),
+              }
+            );
+
+            if (!response.ok) throw new Error(`HTTP ${response.status}`);
+            const text = await response.text();
+            if (!text) throw new Error("Leere Antwort vom Flow.");
+            const result = JSON.parse(text);
+
+            skillData =
+              result?.Ausbildungsbewertung ||
+              result?.body?.Ausbildungsbewertung ||
+              result?.outputs?.body?.Ausbildungsbewertung ||
+              {};
+
+            skillDataLoaded = true;
+            console.log("[SkillMeter] Flow-Daten einmalig geladen:", skillData);
+            return skillData;
+          } catch (err) {
+            console.error("[SkillMeter] Fehler beim Laden der Kompetenzdaten:", err);
+            skillDataLoaded = true;
+            skillData = {};
+          }
+        }
+
+        // --- Detail-Bubble anzeigen ---
+        function showSkillDetail(skillKey) {
+          if (!skillDataLoaded) {
+            loadSkillData().then(() => showSkillDetail(skillKey));
+            return;
+          }
+
+          if (!skillData || Object.keys(skillData).length === 0) {
+            skillText.textContent = "Keine Daten verfügbar.";
+            return;
+          }
+
+          // Toggle: gleiche Bubble wieder schließen
+          if (activeSkill === skillKey) {
+            skillDetail.style.opacity = "0";
+            setTimeout(() => {
+              skillDetail.style.display = "none";
+              activeSkill = null;
+            }, 250);
+            return;
+          }
+
+          activeSkill = skillKey;
+
+          let title = "";
+          let text = "";
+          let color = "#3A6FF8";
+
+          switch (skillKey) {
+            case "fach":
+              title = "Fachkompetenz";
+              text = skillData.Fachkompetenz || "Keine Fachkompetenz-Daten.";
+              color = userColors.fach || "#3A6FF8";
+              break;
+            case "pers":
+              title = "Persönlichkeitskompetenz";
+              text =
+                skillData.Persönlichkeitskompetenz ||
+                skillData.Personlichkeitskompetenz ||
+                "Keine Persönlichkeitskompetenz-Daten.";
+              color = userColors.pers || "#16a34a";
+              break;
+            case "sozial":
+              title = "Sozialkompetenz";
+              text = skillData.Sozialkompetenz || "Keine Sozialkompetenz-Daten.";
+              color = userColors.sozial || "#f59e0b";
+              break;
+          }
+
+          skillTitle.textContent = title;
+          skillText.textContent = text;
+          document.getElementById("skillColorCircle").style.background = color;
+
+          skillDetail.style.display = "block";
+          skillDetail.style.opacity = "0";
+          skillDetail.style.transition = "opacity 0.3s ease";
+          requestAnimationFrame(() => (skillDetail.style.opacity = "1"));
+        }
+
+        // --- Klicks auf Balken ---
+        bars.forEach((bar) => {
+          bar.addEventListener("click", () => {
+            const skillKey = bar.getAttribute("data-skill");
+            showSkillDetail(skillKey);
+          });
+        });
+
+        // --- Daten einmalig beim Start laden ---
+        loadSkillData();
+      });
+    </script>
